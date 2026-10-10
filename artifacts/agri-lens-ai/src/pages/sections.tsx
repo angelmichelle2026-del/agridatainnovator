@@ -7,7 +7,7 @@ import {
   BookOpenCheck,
   CircleAlert,
   ExternalLink,
-  FileSearch,
+  GitCompareArrows,
   Leaf,
   MapPinned,
   Search,
@@ -198,6 +198,18 @@ function StatCard({
     </article>
   );
 }
+function compareSeasonNote(current: number, previous: number, unit: string) {
+  const difference = Number(
+    (current - previous).toFixed(unit === "% of farmers" ? 1 : 0),
+  );
+  const sign = difference > 0 ? "+" : difference < 0 ? "−" : "";
+  const amount =
+    unit === "% of farmers"
+      ? `${sign}${Math.abs(difference).toFixed(1)} percentage points`
+      : `${sign}${Math.round(Math.abs(difference * 1000)).toLocaleString()} hectares`;
+  return `${amount} vs the same season in 2025`;
+}
+
 function NativeSelect({
   label,
   value,
@@ -235,6 +247,21 @@ export function HomePage({ language }: Props) {
   const seed = latestObservation("improved_seed_use");
   const organic = latestObservation("organic_fertilizer_use");
   const land = latestObservation("agricultural_land");
+  const priorSeed = getObservation(
+    seed.year - 1,
+    seed.season,
+    "improved_seed_use",
+  )!;
+  const priorOrganic = getObservation(
+    organic.year - 1,
+    organic.season,
+    "organic_fertilizer_use",
+  )!;
+  const priorLand = getObservation(
+    land.year - 1,
+    land.season,
+    "agricultural_land",
+  )!;
   const latestTag = seasonName(seed.year, seed.season);
   return (
     <div className="page-enter">
@@ -245,22 +272,22 @@ export function HomePage({ language }: Props) {
             <span className="h-1.5 w-1.5 rounded-full bg-[#638052]" />
             {tx(
               rw,
-              "Official survey observations · Updated through Season B 2026",
-              "Imibare y’ubushakashatsi · kugeza kuri Season B 2026",
+              "NISR survey snapshot · checked 10 Oct 2026",
+              "Imibare ya NISR · igenzuwe ku wa 10 Ukwakira 2026",
             )}
           </div>
           <h1 className="display-font max-w-[740px] text-[37px] font-extrabold leading-[1.04] tracking-[-.065em] text-[#213b30] sm:text-[56px] lg:text-[64px]">
             {tx(
               rw,
-              "See the evidence. Plan with clarity.",
-              "Reba ibimenyetso. Fata ibyemezo usobanutse.",
+              "Start with what the survey says.",
+              "Tangira ku byo ubushakashatsi buvuga.",
             )}
           </h1>
           <p className="mt-5 max-w-[640px] text-[14px] leading-6 text-[#526456] sm:text-[16px] sm:leading-7">
             {tx(
               rw,
-              "Explore Rwanda’s official Seasonal Agricultural Survey (SAS) statistics by season, district and indicator. Every displayed figure links back to its NISR source.",
-              "Shakisha imibare ya NISR y’ubushakashatsi bw’ibihe by’ubuhinzi (SAS), uko ibihe n’uturere bitandukanye. Buri mubare ugaragaza inkomoko ya NISR.",
+              "A practical starting point for Rwanda’s agriculture planners: see what NISR’s Seasonal Agricultural Survey (SAS) reported, compare like-for-like seasons, and follow every number back to its source.",
+              "Intangiriro ifasha igenamigambi ry’ubuhinzi mu Rwanda: reba ibyatangajwe na NISR, gereranya ibihe bihwanye, kandi ukurikirane inkomoko ya buri mubare.",
             )}
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
@@ -269,16 +296,16 @@ export function HomePage({ language }: Props) {
               className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-[#244636] px-4 text-[12px] font-semibold text-white hover:bg-[#315943]"
               data-testid="link-home-dashboard"
             >
-              {tx(rw, "Open dashboard", "Fungura imbonerahamwe")}
+              {tx(rw, "See the seasonal picture", "Reba ishusho y’ibihe")}
               <ArrowRight size={15} />
             </Link>
             <Link
-              href="/data"
+              href="/compare"
               className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-[#c5cdbd] bg-[#f6f6ef] px-4 text-[12px] font-semibold text-[#284837] hover:bg-white"
-              data-testid="link-home-data"
+              data-testid="link-home-compare"
             >
-              {tx(rw, "Explore the data", "Shakisha amakuru")}
-              <FileSearch size={15} />
+              {tx(rw, "Compare two districts", "Gereranya uturere tubiri")}
+              <GitCompareArrows size={15} />
             </Link>
           </div>
         </div>
@@ -287,7 +314,7 @@ export function HomePage({ language }: Props) {
             <span className="h-1.5 w-1.5 rounded-full bg-[#638052]" />
             {tx(
               rw,
-              `Latest observation: ${latestTag}`,
+              `Latest season in this snapshot: ${latestTag}`,
               `Imibare iheruka: ${latestTag}`,
             )}
           </span>
@@ -307,19 +334,19 @@ export function HomePage({ language }: Props) {
         <StatCard
           label={metricDefinitions.improved_seed_use.label}
           value={displayValue(seed.value, "% of farmers")}
-          note={`${latestTag} · NISR SAS`}
+          note={`${latestTag} · ${compareSeasonNote(seed.value, priorSeed.value, metricDefinitions.improved_seed_use.unit)}`}
           icon={Sprout}
         />
         <StatCard
           label={metricDefinitions.organic_fertilizer_use.label}
           value={displayValue(organic.value, "% of farmers")}
-          note={`${latestTag} · NISR SAS`}
+          note={`${latestTag} · ${compareSeasonNote(organic.value, priorOrganic.value, metricDefinitions.organic_fertilizer_use.unit)}`}
           icon={Leaf}
         />
         <StatCard
           label={metricDefinitions.agricultural_land.label}
           value={`${(land.value / 1000).toFixed(3)}m ha`}
-          note={`${latestTag} · national estimate`}
+          note={`${latestTag} · ${compareSeasonNote(land.value, priorLand.value, metricDefinitions.agricultural_land.unit)}`}
           icon={MapPinned}
         />
       </section>
@@ -328,20 +355,20 @@ export function HomePage({ language }: Props) {
           <div className="flex items-center gap-2 text-primary">
             <Activity size={16} />
             <span className="text-[10px] font-bold uppercase tracking-[.13em]">
-              {tx(rw, "A useful first read", "Iby’ingenzi wabona mbere")}
+              {tx(rw, "In one sentence", "Mu nteruro imwe")}
             </span>
           </div>
           <h2 className="display-font mt-3 text-[19px] font-bold tracking-[-.035em]">
             {tx(
               rw,
-              "Seasonal results are not annual averages",
-              "Ibyavuye muri buri season si impuzandengo y’umwaka",
+              "A useful first read: compare like with like",
+              "Banza ugereranye ibihe bihwanye",
             )}
           </h2>
           <p className="mt-2 max-w-[740px] text-[12px] leading-6 text-muted-foreground">
             {tx(
               rw,
-              "In Season B 2026, 20.9% of farmers used improved seeds and 81.3% applied organic fertilizer. These are survey-season estimates. They should not be read as district-specific values or as a causal explanation of production.",
+              `In ${latestTag}, ${displayValue(seed.value, "% of farmers")} of farmers reported using improved seeds and ${displayValue(organic.value, "% of farmers")} reported using organic fertilizer. These are national estimates for one season—not a score for any district. The cards compare each figure with the same season in 2025.`,
               "Muri Season B 2026, 20.9% y’abahinzi bakoresheje imbuto z’indobanure naho 81.3% bakoresha ifumbire y’imborera. Iyi ni mibare y’ubushakashatsi bw’igihe runaka; si iy’akarere ku giti cyako kandi ntisobanura impamvu z’umusaruro.",
             )}
           </p>
@@ -352,20 +379,20 @@ export function HomePage({ language }: Props) {
         <aside className="rounded-xl bg-[#244636] p-5 text-[#f2f1e7]">
           <BookOpenCheck size={18} className="text-[#c3d79d]" />
           <h2 className="display-font mt-4 text-[18px] font-bold">
-            {tx(rw, "Evidence, with context", "Imibare hamwe n’ibisobanuro")}
+            {tx(rw, "Where to go next", "Aho wakomereza")}
           </h2>
           <p className="mt-2 text-[11px] leading-[1.75] text-white/70">
             {tx(
               rw,
-              "Browse the published estimates, compare like-for-like seasons, and download the normalized district dataset.",
-              "Reba imibare yatangajwe, gereranya seasons zimwe kandi ukurure amakuru y’uturere.",
+              "Check the full table, compare two districts, or open the NISR sources before you use a figure in a brief.",
+              "Reba imbonerahamwe yose, gereranya uturere tubiri, cyangwa ufungure inkomoko mbere yo gusubiramo umubare.",
             )}
           </p>
           <Link
-            href="/about"
+            href="/data"
             className="mt-4 inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#d5e3bb] hover:text-white"
           >
-            {tx(rw, "Sources & methods", "Inkomoko n’uburyo")}
+            {tx(rw, "Explore all data", "Shakisha amakuru yose")}
             <ArrowRight size={13} />
           </Link>
         </aside>
@@ -374,7 +401,7 @@ export function HomePage({ language }: Props) {
         <SourceNote>
           {tx(
             rw,
-            "AgriLens AI is an independent prototype and is not affiliated with NISR. The survey figures belong to NISR; values are reproduced with source links and original units.",
+            "Planning aid, not an official verdict: this is a checked snapshot, not a live NISR feed. National figures describe Rwanda as a whole; district data here covers land use only. Always open the source before quoting a number.",
             "AgriLens AI ni prototype yigenga kandi ntifitanye isano na NISR. Imibare y’ubushakashatsi ni iya NISR; yagaragajwe n’inkomoko n’ibipimo byayo.",
           )}
         </SourceNote>
@@ -420,10 +447,26 @@ export function DataPage({ language }: Props) {
   const rw = isRw(language);
   const [dataset, setDataset] = useState<"national" | "district">("national");
   const [metric, setMetric] = useState("improved_seed_use");
-  const [season, setSeason] = useState("A");
+  const [season, setSeason] = useState("ALL");
   const [query, setQuery] = useState("");
+  const availableSeasons =
+    dataset === "district"
+      ? ["A", "B"]
+      : [
+          ...new Set(
+            observations
+              .filter((row) => row.metric === metric)
+              .map((row) => row.season),
+          ),
+        ].sort();
+  const selectedSeason =
+    season === "ALL" || availableSeasons.includes(season) ? season : "ALL";
   const filteredNational = observations
-    .filter((row) => row.metric === metric && row.season === season)
+    .filter(
+      (row) =>
+        row.metric === metric &&
+        (selectedSeason === "ALL" || row.season === selectedSeason),
+    )
     .filter((row) =>
       `${row.year} ${row.season} ${metricDefinitions[row.metric]?.label}`
         .toLowerCase()
@@ -431,7 +474,11 @@ export function DataPage({ language }: Props) {
     )
     .sort((a, b) => a.year - b.year);
   const filteredDistrict = districtRows
-    .filter((row) => row.season === season && row.district !== "National")
+    .filter(
+      (row) =>
+        (selectedSeason === "ALL" || row.season === selectedSeason) &&
+        row.district !== "National",
+    )
     .filter((row) => row.district.toLowerCase().includes(query.toLowerCase()))
     .sort((a, b) => a.district.localeCompare(b.district));
   const districtMetric =
@@ -475,12 +522,12 @@ export function DataPage({ language }: Props) {
     <div className="page-enter">
       <PageHeading
         index="01"
-        eyebrow={tx(rw, "DISCOVER THE EVIDENCE", "SHAKISHA IMIBARE")}
-        title={tx(rw, "Data explorer", "Shakisha amakuru")}
+        eyebrow={tx(rw, "BROWSE THE NUMBERS", "SHAKISHA IMIBARE")}
+        title={tx(rw, "Explore the data", "Shakisha amakuru")}
         description={tx(
           rw,
-          "Browse official national seasonal estimates and district land-use observations. Search, choose a measure, and export the rows currently shown.",
-          "Reba imibare y’igihugu kuri buri season n’ikoreshwa ry’ubutaka mu turere. Shakisha, hitamo igipimo, ukurure ibisubizo bigaragara.",
+          "Choose a measure and see every season available in the NISR snapshot. Search by year or district, then download exactly the rows on screen.",
+          "Hitamo igipimo urebe seasons zose ziri muri iyi mibare ya NISR. Shakisha umwaka cyangwa akarere, hanyuma ukurure ibisubizo bigaragara.",
         )}
       />
       <div
@@ -494,12 +541,12 @@ export function DataPage({ language }: Props) {
           onClick={() => {
             setDataset("national");
             setMetric("improved_seed_use");
-            setSeason("A");
+            setSeason("ALL");
             setQuery("");
           }}
           className={`rounded-lg px-4 py-2.5 text-[12px] font-semibold ${dataset === "national" ? "bg-primary text-primary-foreground" : "border border-border bg-card text-muted-foreground"}`}
         >
-          {tx(rw, "National seasonal indicators", "Ibipimo by’igihugu")}
+          {tx(rw, "National estimates", "Ibipimo by’igihugu")}
         </button>
         <button
           role="tab"
@@ -507,7 +554,7 @@ export function DataPage({ language }: Props) {
           onClick={() => {
             setDataset("district");
             setMetric(DISTRICT_METRICS[0].key);
-            setSeason("A");
+            setSeason("ALL");
             setQuery("");
           }}
           className={`rounded-lg px-4 py-2.5 text-[12px] font-semibold ${dataset === "district" ? "bg-primary text-primary-foreground" : "border border-border bg-card text-muted-foreground"}`}
@@ -523,7 +570,10 @@ export function DataPage({ language }: Props) {
           <NativeSelect
             label={tx(rw, "Indicator", "Igipimo")}
             value={metric}
-            onChange={setMetric}
+            onChange={(value) => {
+              setMetric(value);
+              setSeason("ALL");
+            }}
             options={
               dataset === "national"
                 ? nationalMetricOptions
@@ -532,13 +582,22 @@ export function DataPage({ language }: Props) {
             testId="select-data-metric"
           />
           <NativeSelect
-            label={tx(rw, "Survey season", "Igihe")}
-            value={season}
+            label={tx(rw, "Time period", "Igihe")}
+            value={selectedSeason}
             onChange={setSeason}
-            options={(dataset === "district"
-              ? ["A", "B"]
-              : ["A", "B", "C"]
-            ).map((s) => ({ value: s, label: `Season ${s}` }))}
+            options={[
+              {
+                value: "ALL",
+                label:
+                  dataset === "district"
+                    ? "Both seasons"
+                    : "All available seasons",
+              },
+              ...availableSeasons.map((s) => ({
+                value: s,
+                label: `Season ${s}`,
+              })),
+            ]}
             testId="select-data-season"
           />
           <label className="flex min-w-0 flex-col gap-1.5 text-[10px] font-bold uppercase tracking-[.1em] text-muted-foreground">
@@ -610,7 +669,8 @@ export function DataPage({ language }: Props) {
             </table>
             {filteredNational.length === 0 && (
               <p className="p-5 text-center text-[12px] text-muted-foreground">
-                No observations match this search.
+                No rows match those filters. Try another period or clear your
+                search.
               </p>
             )}
           </div>
@@ -648,7 +708,7 @@ export function DataPage({ language }: Props) {
                         target="_blank"
                         rel="noreferrer"
                       >
-                        NISR PDF
+                        NISR report
                         <ExternalLink size={12} className="ml-1 inline" />
                       </a>
                     </td>
@@ -665,8 +725,8 @@ export function DataPage({ language }: Props) {
         )}
         <p className="mt-3 text-[10px] text-muted-foreground">
           {dataset === "national"
-            ? `${filteredNational.length} observations · national estimates`
-            : `${filteredDistrict.length} districts · 2025 Season ${season} · district table`}
+            ? `${filteredNational.length} published rows · national estimates${selectedSeason === "ALL" ? " · all available seasons" : ` · Season ${selectedSeason}`}`
+            : `${filteredDistrict.length} district rows · 2025${selectedSeason === "ALL" ? " · Seasons A and B" : ` · Season ${selectedSeason}`}`}
         </p>
       </section>
       <div className="mt-5">
@@ -732,13 +792,17 @@ export function DashboardPage({ language }: Props) {
     "organic_fertilizer_use",
     "inorganic_fertilizer_use",
     "pesticide_use",
-  ].map((metric) => ({ metric, value: getObservation(2026, "B", metric)! }));
+  ].map((metric) => ({
+    metric,
+    value: getObservation(2026, "B", metric)!,
+    prior: getObservation(2025, "B", metric)!,
+  }));
   return (
     <div className="page-enter">
       <PageHeading
         index="02"
-        eyebrow={tx(rw, "INDICATOR OVERVIEW", "INCAMAKE Y’IBIPIMO")}
-        title={tx(rw, "Dashboard", "Imbonerahamwe")}
+        eyebrow={tx(rw, "THE LATEST SURVEY", "INCAMAKE Y’IBIPIMO")}
+        title={tx(rw, "Seasonal picture", "Ishusho y’ibihe")}
         description={tx(
           rw,
           "Read the latest published season, view how reported farmer practices differ by season, and inspect national land-use estimates.",
@@ -747,7 +811,11 @@ export function DashboardPage({ language }: Props) {
       />
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[#cfdbc5] bg-[#eff3e8] px-4 py-3">
         <span className="text-[11px] font-semibold text-[#38563c]">
-          {tx(rw, "Latest published observation", "Imibare iheruka gutangazwa")}
+          {tx(
+            rw,
+            "Latest NISR season in this snapshot",
+            "Imibare iheruka gutangazwa",
+          )}
           : 2026 · Season B
         </span>
         <span className="text-[10px] text-[#59705a]">
@@ -755,12 +823,12 @@ export function DashboardPage({ language }: Props) {
         </span>
       </div>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {latestCards.map(({ metric, value }, index) => (
+        {latestCards.map(({ metric, value, prior }, index) => (
           <StatCard
             key={metric}
             label={metricDefinitions[metric].label}
             value={displayValue(value.value, metricDefinitions[metric].unit)}
-            note={`${seasonName(latest.year, latest.season)} · national estimate`}
+            note={`${seasonName(latest.year, latest.season)} · ${compareSeasonNote(value.value, prior.value, metricDefinitions[metric].unit)}`}
             icon={[Sprout, Leaf, Wheat, Activity][index]}
           />
         ))}
@@ -769,10 +837,10 @@ export function DashboardPage({ language }: Props) {
         <article className="rounded-xl border border-border bg-card p-4 sm:p-5">
           <div className="mb-3">
             <p className="text-[10px] font-bold uppercase tracking-[.13em] text-primary">
-              FARMER INPUT USE · %
+              FARMER PRACTICES · SHARE OF FARMERS
             </p>
             <h2 className="display-font mt-1 text-[17px] font-bold">
-              Reported use by agricultural season
+              What farmers reported using, by season
             </h2>
           </div>
           <div className="h-[280px] w-full">
@@ -848,10 +916,10 @@ export function DashboardPage({ language }: Props) {
         <article className="rounded-xl border border-border bg-card p-4 sm:p-5">
           <div className="mb-3">
             <p className="text-[10px] font-bold uppercase tracking-[.13em] text-primary">
-              LAND USE · THOUSAND HECTARES
+              LAND REPORTED · THOUSAND HECTARES
             </p>
             <h2 className="display-font mt-1 text-[17px] font-bold">
-              Agriculture area reported
+              How much land was reported in agriculture?
             </h2>
           </div>
           <div className="h-[280px] w-full">
@@ -959,11 +1027,11 @@ export function ComparePage({ language }: Props) {
     <div className="page-enter">
       <PageHeading
         index="03"
-        eyebrow={tx(rw, "READ ACROSS DISTRICTS", "GERERANYA UTURERE")}
-        title={tx(rw, "District comparison", "Gereranya uturere")}
+        eyebrow={tx(rw, "SIDE BY SIDE", "GERERANYA UTURERE")}
+        title={tx(rw, "Compare districts", "Gereranya uturere")}
         description={tx(
           rw,
-          "Compare land-use estimates for two districts in the same 2025 season. These tables contain land-use measures, not district input-use rates or productivity.",
+          "Choose two districts and a 2025 season to see their reported land use side by side. It’s land only—not input use or crop yields.",
           "Gereranya imibare y’ubutaka bw’uturere tubiri muri season imwe ya 2025. Iyi mibare ni iy’ikoreshwa ry’ubutaka, si iy’imikoreshereze y’ibikoresho cyangwa umusaruro.",
         )}
       />
@@ -973,7 +1041,7 @@ export function ComparePage({ language }: Props) {
       >
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <NativeSelect
-            label={label(rw, "District one", "Akarere ka mbere")}
+            label={label(rw, "First district", "Akarere ka mbere")}
             value={left}
             onChange={setLeft}
             options={districts.map((district) => ({
@@ -983,7 +1051,7 @@ export function ComparePage({ language }: Props) {
             testId="select-district-one"
           />
           <NativeSelect
-            label={label(rw, "District two", "Akarere ka kabiri")}
+            label={label(rw, "Second district", "Akarere ka kabiri")}
             value={right}
             onChange={setRight}
             options={districts.map((district) => ({
@@ -1058,7 +1126,7 @@ export function ComparePage({ language }: Props) {
             <p className="text-[10px] font-bold uppercase tracking-[.13em] text-primary">
               {tx(
                 rw,
-                "Difference · district one minus district two",
+                "Gap · first district minus second",
                 "Itandukaniro · aka mbere ukuyemo aka kabiri",
               )}
             </p>
@@ -1136,11 +1204,15 @@ export function InsightsPage({ language }: Props) {
     <div className="page-enter">
       <PageHeading
         index="04"
-        eyebrow={tx(rw, "EVIDENCE, WITH CONTEXT", "IBIMENYETSO N’IBISOBANURO")}
-        title={tx(rw, "What the figures show", "Ibyo imibare igaragaza")}
+        eyebrow={tx(rw, "WHAT CHANGED", "IBIMENYETSO N’IBISOBANURO")}
+        title={tx(
+          rw,
+          "What changed—and what didn’t?",
+          "Ibyo imibare igaragaza",
+        )}
         description={tx(
           rw,
-          "Simple, reproducible comparisons from NISR’s published values. Differences describe reported estimates; they do not explain why they changed.",
+          "A quick, like-for-like read of NISR’s published estimates. The numbers show what changed—not why.",
           "Igereranya rishingiye ku mibare NISR yatangaje. Itandukaniro risobanura imibare gusa; ntirisobanura impamvu yahindutse.",
         )}
       />
@@ -1148,7 +1220,7 @@ export function InsightsPage({ language }: Props) {
         <div className="mb-4 flex items-center gap-2 text-primary">
           <Activity size={16} />
           <span className="text-[10px] font-bold uppercase tracking-[.13em]">
-            2025 B → 2026 B · PERCENTAGE-POINT CHANGE
+            Same season · 2025 B to 2026 B · percentage-point change
           </span>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
@@ -1163,7 +1235,7 @@ export function InsightsPage({ language }: Props) {
                 <span className="ml-1 text-[11px] font-semibold">pp</span>
               </p>
               <p className="mt-1 text-[10px] text-muted-foreground">
-                18 {item.prior}% → 2026 {item.current}%
+                2025 {item.prior}% → 2026 {item.current}%
               </p>
             </div>
           ))}
@@ -1180,7 +1252,7 @@ export function InsightsPage({ language }: Props) {
             <Wheat size={17} />
           </span>
           <h2 className="display-font mt-4 text-[17px] font-bold">
-            Seasonality matters
+            Different seasons, different snapshots
           </h2>
           <p className="mt-2 text-[12px] leading-[1.75] text-muted-foreground">
             NISR reports irrigation practice at {irrigationB}% of farmers in
@@ -1201,7 +1273,7 @@ export function InsightsPage({ language }: Props) {
             <CircleAlert size={17} className="mt-0.5 shrink-0 text-[#896a32]" />
             <div>
               <h2 className="display-font text-[17px] font-bold">
-                What this does not establish
+                What these numbers can’t tell us
               </h2>
               <p className="mt-2 text-[12px] leading-[1.75] text-[#65583d]">
                 A change in reported input use does not, by itself, establish a
@@ -1228,7 +1300,6 @@ export function InsightsPage({ language }: Props) {
 
 export function AssistantPage({ language }: Props) {
   const rw = isRw(language);
-  const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState<{
     text: string;
     sourceId: string;
@@ -1236,21 +1307,21 @@ export function AssistantPage({ language }: Props) {
   const prompts = [
     {
       id: "latest-seeds",
-      label: "What share used improved seeds in the latest season?",
+      label: "How common was improved-seed use in the latest season?",
       metric: "improved_seed_use",
       year: 2026,
       season: "B" as Season,
     },
     {
       id: "latest-fertilizer",
-      label: "How many farmers used organic fertilizer in 2026 B?",
+      label: "How many farmers reported using organic fertilizer?",
       metric: "organic_fertilizer_use",
       year: 2026,
       season: "B" as Season,
     },
     {
       id: "latest-land",
-      label: "How much land was used for agriculture in 2026 B?",
+      label: "How much land was reported in agriculture in 2026 Season B?",
       metric: "agricultural_land",
       year: 2026,
       season: "B" as Season,
@@ -1261,7 +1332,7 @@ export function AssistantPage({ language }: Props) {
     if (!row) return;
     const definition = metricDefinitions[metric];
     setAnswer({
-      text: `${definition.label}: ${displayValue(row.value, definition.unit)} in ${seasonName(year, season)}. This is a published national survey estimate, not a district-level figure.`,
+      text: `NISR reports ${displayValue(row.value, definition.unit)} for ${seasonName(year, season)}. This is a national survey estimate—not a figure for one district.`,
       sourceId: row.source_id,
     });
   }
@@ -1269,11 +1340,11 @@ export function AssistantPage({ language }: Props) {
     <div className="page-enter">
       <PageHeading
         index="05"
-        eyebrow={tx(rw, "ASK WITH EVIDENCE", "IBAZO RISHINGIYE KU BIMENYETSO")}
-        title={tx(rw, "Source lookup", "Shakisha inkomoko")}
+        eyebrow={tx(rw, "QUICK ANSWERS", "IBAZO RISHINGIYE KU BIMENYETSO")}
+        title={tx(rw, "Quick answers", "Shakisha inkomoko")}
         description={tx(
           rw,
-          "Get a factual response from the verified indicators already in this prototype. This is a deterministic data lookup, not a generative AI assistant.",
+          "Choose a common question to get a short answer from this NISR snapshot, with a link to the source. This is not an open-ended AI chat.",
           "Bona igisubizo gishingiye ku bipimo byemejwe biri muri iyi prototype. Ni ugushakisha amakuru, si umufasha ukoresha AI.",
         )}
       />
@@ -1287,19 +1358,19 @@ export function AssistantPage({ language }: Props) {
           </span>
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[.14em] text-primary">
-              AGRILENS · SOURCE LOOKUP
+              AGRILENS · QUICK ANSWERS
             </p>
             <p className="mt-0.5 text-[11px] text-muted-foreground">
-              Answers are computed directly from the cited dataset.
+              Every answer below links to its NISR source.
             </p>
           </div>
           <span className="ml-auto rounded-full border border-[#cfdbc5] bg-[#eff3e8] px-2.5 py-1 text-[9px] font-bold uppercase tracking-[.1em] text-[#456749]">
-            Data only
+            NISR data
           </span>
         </div>
         <div className="mx-auto max-w-[840px] px-5 py-7 sm:px-8">
           <h2 className="display-font text-[20px] font-bold tracking-[-.035em]">
-            Choose a question
+            What would you like to know?
           </h2>
           <div className="mt-4 grid gap-2 sm:grid-cols-3">
             {prompts.map((prompt) => (
@@ -1315,28 +1386,6 @@ export function AssistantPage({ language }: Props) {
               </button>
             ))}
           </div>
-          <form
-            className="mt-5 flex gap-2"
-            onSubmit={(event) => {
-              event.preventDefault();
-              setAnswer(null);
-              setQuestion("");
-            }}
-          >
-            <input
-              value={question}
-              onChange={(event) => setQuestion(event.target.value)}
-              placeholder="Type a note or question (lookup is limited to examples above)"
-              className="h-11 min-w-0 flex-1 rounded-lg border border-border bg-background px-3 text-[12px]"
-              aria-label="Question"
-            />
-            <button
-              type="submit"
-              className="rounded-lg bg-primary px-4 text-[11px] font-semibold text-primary-foreground"
-            >
-              Clear
-            </button>
-          </form>
           {answer ? (
             <div
               className="mt-5 rounded-xl border border-[#cfdbc5] bg-[#eff3e8] p-4"
@@ -1349,21 +1398,13 @@ export function AssistantPage({ language }: Props) {
                 <SourceLink sourceId={answer.sourceId} />
               </p>
             </div>
-          ) : (
-            question && (
-              <p className="mt-3 text-[10px] text-muted-foreground">
-                This prototype answers only the published questions above. It
-                does not send your text to a model or backend.
-              </p>
-            )
-          )}
+          ) : null}
         </div>
       </section>
       <div className="mt-5">
         <SourceNote>
-          For free-form analysis, check the source and indicator definition
-          directly. This prototype does not generate answers beyond exact
-          lookups from its data.
+          Need a broader interpretation? Open the NISR report and check the
+          indicator definition before drawing a conclusion.
         </SourceNote>
       </div>
     </div>
@@ -1376,11 +1417,11 @@ export function AboutPage({ language }: Props) {
     <div className="page-enter">
       <PageHeading
         index="06"
-        eyebrow={tx(rw, "TRANSPARENCY FIRST", "UBWIZERWE N’IMBIBI")}
-        title={tx(rw, "Data & methodology", "Amakuru n’uburyo")}
+        eyebrow={tx(rw, "DATA SOURCES & LIMITS", "UBWIZERWE N’IMBIBI")}
+        title={tx(rw, "Sources & how to read", "Amakuru n’uburyo")}
         description={tx(
           rw,
-          "What was loaded, how to interpret it, and where every number came from.",
+          "See what is in this snapshot, how to read the figures, and where each number came from.",
           "Ibyashyizwe muri sisitemu, uko wabisesengura n’aho buri mubare waturutse.",
         )}
       />
@@ -1389,12 +1430,13 @@ export function AboutPage({ language }: Props) {
           <div className="flex items-center gap-2 text-primary">
             <ShieldCheck size={17} />
             <span className="text-[10px] font-bold uppercase tracking-[.14em]">
-              VERIFIED SOURCE DATA
+              WHAT’S IN THIS SNAPSHOT
             </span>
           </div>
           <h2 className="display-font mt-4 text-[21px] font-bold tracking-[-.04em]">
             {districtRows.filter((row) => row.district !== "National").length}{" "}
-            district-season land-use rows plus national seasonal observations.
+            district-season land-use rows and {observations.length} national
+            observations.
           </h2>
           <p className="mt-3 text-[12px] leading-[1.8] text-muted-foreground">
             District land-use observations cover Seasons A and B of 2025 (30
@@ -1403,6 +1445,11 @@ export function AboutPage({ language }: Props) {
             summaries are included for 2025 A/B and 2026 A/B. The 2026 releases
             report coverage across all 30 districts.
           </p>
+          <div className="mt-4 rounded-lg bg-[#f4f2e9] px-3.5 py-3 text-[11px] leading-5 text-[#625e4f]">
+            <strong>Snapshot checked 10 Oct 2026.</strong> New NISR releases do
+            not flow in automatically; this dataset must be refreshed and
+            checked before using a newer season.
+          </div>
           <div className="mt-5 flex flex-wrap gap-2">
             <span className="rounded-full border border-[#cfdbc5] bg-[#eff3e8] px-2.5 py-1.5 text-[10px] font-semibold text-[#456749]">
               NISR SAS · 2025 annual report
@@ -1415,11 +1462,12 @@ export function AboutPage({ language }: Props) {
         <article className="rounded-xl bg-[#244636] p-5 text-[#f2f1e7] sm:p-7">
           <Sprout size={20} className="text-[#c3d79d]" />
           <h2 className="display-font mt-4 text-[19px] font-bold">
-            Independent planning prototype
+            A first read, not the last word
           </h2>
           <p className="mt-3 text-[11px] leading-[1.8] text-white/70">
-            AgriLens AI is not a government site or official NISR service. NISR
-            remains the publisher of the reported survey values linked here.
+            Use this as a quick orientation before a planning conversation. It
+            is an independent prototype, not an official NISR service; NISR
+            remains the source of truth for every linked figure.
           </p>
         </article>
       </div>
@@ -1448,10 +1496,9 @@ export function AboutPage({ language }: Props) {
         <article className="rounded-xl border border-border bg-card p-5">
           <h2 className="text-[13px] font-bold">Definitions & units</h2>
           <p className="mt-2 text-[11px] leading-[1.75] text-muted-foreground">
-            Input-use values are published percentages of farmers. National
-            land-area values are displayed in thousand hectares; district tables
-            are labeled in 000 hectares. NISR’s rounded percentages and values
-            are retained. Missing dashes remain null.
+            Input-use values are published percentages of farmers. National and
+            district land areas are measured in thousand hectares. NISR’s
+            rounded values are retained; a missing dash is not counted as zero.
           </p>
         </article>
         <article className="rounded-xl border border-[#e3d8bf] bg-[#f8f3e9] p-5">
