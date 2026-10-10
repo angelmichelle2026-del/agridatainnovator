@@ -19,10 +19,11 @@
 - `artifacts/agri-lens-ai/src/data/district-land-2026a.json` — normalized 2026 Season A district land-use estimates from workbook Table 9.
 - `artifacts/agri-lens-ai/src/data/national-indicators.json` — 53 national observations, metric definitions and source metadata.
 - `artifacts/agri-lens-ai/src/data/nisr-sas-2026-season-a-tables.json` — structured, searchable row and header data from all 35 supplied workbook sheets.
+- `artifacts/agri-lens-ai/src/data/crop-visuals-2026a.json` — compact chart input from Table 6 and Table 15, lazy-loaded on the dashboard.
 - `artifacts/agri-lens-ai/public/data/nisr-sas-2026-season-a-tables.xlsx` — preserved source workbook available from the app’s data explorer.
 - `artifacts/agri-lens-ai/public/data/district-land-2026-season-a.csv` — CSV of the 30 district rows and National row from 2026 Table 9.
 - `scripts/import_nisr_sas.py` — downloads the NISR 2025 report (or accepts `--pdf`) and recreates 2025 district JSON/CSV from Tables 9 and 10. Requires Poppler’s `pdftotext`.
-- `scripts/import_nisr_sas_2026a_workbook.py` — imports the supplied workbook into the 35-table dataset and the normalized 2026 Table 9 JSON/CSV. Requires `openpyxl` (`python3 -m pip install openpyxl`).
+- `scripts/import_nisr_sas_2026a_workbook.py` — imports the supplied workbook into the 35-table dataset, the compact Table 6/15 chart file, and the normalized 2026 Table 9 JSON/CSV. Requires `openpyxl` (`python3 -m pip install openpyxl`).
 - `scripts/verify_nisr_data.mjs` — checks source values, coverage, missing-value handling, exports, all 35 tables and the downloadable workbook.
 
 To rebuild the 2026A extract after replacing the source workbook, run `python3 scripts/import_nisr_sas_2026a_workbook.py`. To run all data integrity checks, use `node scripts/verify_nisr_data.mjs`.
@@ -34,6 +35,8 @@ To rebuild the 2026A extract after replacing the source workbook, run `python3 s
 - The 35-sheet browser flattens multirow spreadsheet headings into readable column labels. It preserves non-empty rows and cell values, including summary rows, source zeros and missing cells. The original workbook is available for checking layout and full precision.
 - National land-use values previously stated in millions of hectares are stored in thousand hectares (for example, 1.414 million ha becomes 1,414 thousand ha). Published percentages are retained as NISR states them.
 - Farmer-use values are percentages of farmers. Dashboard comparisons show differences in **percentage points**, computed as the later published percentage minus the earlier one.
+- The crop dashboard compares 2025 and 2026 Season A national production in metric tonnes from Table 6. It excludes summary rows (such as cereals, tubers, bananas, beans and total) so headline groups and their component crop rows are not counted twice.
+- The district crop chart uses Table 15 and includes only the workbook’s 30 named districts. It excludes the `S/Total`, `2025A` and `Change` summary rows, and displays the ten highest reported district values for the selected crop. Production is not yield or productivity.
 - National and district values are separate geographic levels. The 2026 workbook provides district-level crop areas, average yields and production in its own tables, while Table 9 is the land-use table wired into district comparison. Do not treat unrelated measures as interchangeable.
 - The published area components are displayed as separately reported categories. Users should not assume that component areas are mutually exclusive or add them to reproduce total agricultural land.
 - The 2026 Season A workbook was supplied by the user, and its sheets identify NISR SAS 2026 as the source. The NISR release page is cited, but a direct source URL for the supplied file and licensing/reuse terms were not confirmed. Check the current NISR terms and source publication before redistribution beyond this prototype.

@@ -19,6 +19,7 @@ from openpyxl import load_workbook
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_WORKBOOK = ROOT / "artifacts/agri-lens-ai/public/data/nisr-sas-2026-season-a-tables.xlsx"
 TABLES_OUT = ROOT / "artifacts/agri-lens-ai/src/data/nisr-sas-2026-season-a-tables.json"
+CROP_VIS_OUT = ROOT / "artifacts/agri-lens-ai/src/data/crop-visuals-2026a.json"
 DISTRICT_OUT = ROOT / "artifacts/agri-lens-ai/src/data/district-land-2026a.json"
 DISTRICT_CSV = ROOT / "artifacts/agri-lens-ai/public/data/district-land-2026-season-a.csv"
 SOURCE_ID = "nisr-sas-2026-season-a-workbook"
@@ -199,11 +200,24 @@ def main() -> None:
         },
         "tables": tables,
     }
+    crop_visual_data = {
+        "source": {
+            "id": SOURCE_ID,
+            "source_url": SOURCE_URL,
+            "period": "2026 Season A",
+            "table_numbers": [6, 15],
+            "description": "Compact chart data: same-season national crop production in Tables 6 and 2026A district production in Table 15.",
+        },
+        "national_production": tables[5],
+        "district_production": tables[14],
+    }
     district_data = district_land_table9(wb["Table 9"])
     TABLES_OUT.parent.mkdir(parents=True, exist_ok=True)
+    CROP_VIS_OUT.parent.mkdir(parents=True, exist_ok=True)
     DISTRICT_OUT.parent.mkdir(parents=True, exist_ok=True)
     DISTRICT_CSV.parent.mkdir(parents=True, exist_ok=True)
     TABLES_OUT.write_text(json.dumps(tables_data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    CROP_VIS_OUT.write_text(json.dumps(crop_visual_data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     DISTRICT_OUT.write_text(json.dumps(district_data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     with DISTRICT_CSV.open("w", encoding="utf-8-sig", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=["district", "year", "season", *DISTRICT_FIELDS, "source_id", "source_url"])
@@ -211,7 +225,7 @@ def main() -> None:
         for row in district_data["observations"]:
             writer.writerow({**row, "source_url": SOURCE_URL})
     print(f"Imported {len(tables)} tables and {len(district_data['observations'])} 2026 Season A district land-use rows.")
-    print(f"Tables: {TABLES_OUT}\nDistrict JSON: {DISTRICT_OUT}\nDistrict CSV: {DISTRICT_CSV}")
+    print(f"Tables: {TABLES_OUT}\nCrop charts: {CROP_VIS_OUT}\nDistrict JSON: {DISTRICT_OUT}\nDistrict CSV: {DISTRICT_CSV}")
 
 
 if __name__ == "__main__":

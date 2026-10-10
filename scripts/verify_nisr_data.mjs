@@ -29,6 +29,12 @@ const sas2026a = JSON.parse(
     "utf8",
   ),
 );
+const cropVisuals2026a = JSON.parse(
+  fs.readFileSync(
+    new URL("artifacts/agri-lens-ai/src/data/crop-visuals-2026a.json", root),
+    "utf8",
+  ),
+);
 const sas2026aCsv = fs
   .readFileSync(
     new URL(
@@ -106,6 +112,26 @@ const maizeProductionColumn = cropProduction.headers.findIndex((header) =>
   header.includes("Production (MT) · 2026 A"),
 );
 assert.equal(maize2026a[maizeProductionColumn], 488622.343227443);
+assert.equal(cropVisuals2026a.national_production.number, 6);
+assert.equal(cropVisuals2026a.district_production.number, 15);
+const chartMaizeProductionColumn =
+  cropVisuals2026a.national_production.headers.findIndex((header) =>
+    header.includes("Production (MT) · 2026 A"),
+  );
+const chartMaize = cropVisuals2026a.national_production.rows.find(
+  (row) => row[0] === "Maize",
+);
+assert.equal(
+  chartMaize[chartMaizeProductionColumn],
+  488622.343227443,
+  "Chart extract must preserve the source's 2026 A maize production figure",
+);
+const districtMaizeColumn =
+  cropVisuals2026a.district_production.headers.indexOf("Maize");
+const districtMaize = cropVisuals2026a.district_production.rows.find(
+  (row) => row[0] === "Nyarugenge",
+);
+assert.equal(districtMaize[districtMaizeColumn], 869.6914401781387);
 assert(
   fs.statSync(
     new URL(

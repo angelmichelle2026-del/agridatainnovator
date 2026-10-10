@@ -1,6 +1,6 @@
 # AgriLens AI
 
-AgriLens AI is an independent Rwanda agriculture-planning prototype. The app includes source-linked NISR Seasonal Agricultural Survey (SAS) national observations through 2026 Season B, district land-use observations for 2025 Seasons A/B and 2026 Season A, and a searchable browser for all 35 tables in the supplied 2026 Season A workbook.
+AgriLens AI is an independent Rwanda agriculture-planning prototype. The app includes source-linked NISR Seasonal Agricultural Survey (SAS) national observations through 2026 Season B, district land-use observations for 2025 Seasons A/B and 2026 Season A, a searchable browser for all 35 tables in the supplied 2026 Season A workbook, and interactive crop-production visuals comparing the same season and ranking districts.
 
 ## Run and operate
 
@@ -9,7 +9,7 @@ AgriLens AI is an independent Rwanda agriculture-planning prototype. The app inc
 - `PORT=4173 BASE_PATH=/ pnpm --filter @workspace/agri-lens-ai run build` — build the frontend.
 - `node scripts/verify_nisr_data.mjs` — verify source data, coverage, workbook tables, and downloads.
 - `python3 scripts/import_nisr_sas.py` — rebuild 2025 district land use from the annual report (requires Poppler `pdftotext`).
-- `python3 scripts/import_nisr_sas_2026a_workbook.py` — rebuild the 35-table dataset and normalized 2026A district data from the checked-in workbook (requires `openpyxl`).
+- `python3 scripts/import_nisr_sas_2026a_workbook.py` — rebuild the 35-table dataset, compact crop-chart data and normalized 2026A district extract from the checked-in workbook (requires `openpyxl`).
 - `pnpm --filter @workspace/api-server run dev` — run the optional Express API server (health-check only).
 - `pnpm run typecheck` / `pnpm run build` — full workspace checks; frontend Vite needs `PORT` and `BASE_PATH`.
 
@@ -26,6 +26,7 @@ AgriLens AI is an independent Rwanda agriculture-planning prototype. The app inc
 - National observations, metric definitions and sources: `artifacts/agri-lens-ai/src/data/national-indicators.json`
 - District land use: `artifacts/agri-lens-ai/src/data/district-land-2025.json` and `district-land-2026a.json`
 - All 35 Season A workbook tables: `artifacts/agri-lens-ai/src/data/nisr-sas-2026-season-a-tables.json`
+- Compact Table 6/Table 15 chart input: `artifacts/agri-lens-ai/src/data/crop-visuals-2026a.json`
 - Downloadable source workbook: `artifacts/agri-lens-ai/public/data/nisr-sas-2026-season-a-tables.xlsx`
 - District CSVs: `artifacts/agri-lens-ai/public/data/district-land-2025.csv` and `district-land-2026-season-a.csv`
 - Import and validation scripts: `scripts/import_nisr_sas.py`, `scripts/import_nisr_sas_2026a_workbook.py`, `scripts/verify_nisr_data.mjs`

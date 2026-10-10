@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import {
   Activity,
@@ -317,8 +317,8 @@ export function HomePage({ language }: Props) {
           <p className="mt-5 max-w-[640px] text-[14px] leading-6 text-[#526456] sm:text-[16px] sm:leading-7">
             {tx(
               rw,
-              "A practical starting point for Rwanda’s agriculture planners: see what NISR’s Seasonal Agricultural Survey (SAS) reported, compare like-for-like seasons, and follow every number back to its source.",
-              "Intangiriro ifasha igenamigambi ry’ubuhinzi mu Rwanda: reba ibyatangajwe na NISR, gereranya ibihe bihwanye, kandi ukurikirane inkomoko ya buri mubare.",
+              "A practical starting point for Rwanda’s agriculture planners: explore NISR survey results, compare like-for-like seasons, see crop production across districts, and trace every number to its source.",
+              "Intangiriro ifasha igenamigambi ry’ubuhinzi mu Rwanda: reba ibyatangajwe na NISR, gereranya ibihe bihwanye, urebe umusaruro w’imyaka mu turere, kandi ukurikirane inkomoko ya buri mubare.",
             )}
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
@@ -327,7 +327,11 @@ export function HomePage({ language }: Props) {
               className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-[#244636] px-4 text-[12px] font-semibold text-white hover:bg-[#315943]"
               data-testid="link-home-dashboard"
             >
-              {tx(rw, "See the seasonal picture", "Reba ishusho y’ibihe")}
+              {tx(
+                rw,
+                "See seasons & crop visuals",
+                "Reba ibihe n’umusaruro w’imyaka",
+              )}
               <ArrowRight size={15} />
             </Link>
             <Link
@@ -1208,6 +1212,7 @@ export function DashboardPage({ language }: Props) {
           </p>
         </article>
       </section>
+      <CropProductionVisuals />
       <div className="mt-5 grid gap-4 md:grid-cols-[1fr_auto] md:items-center">
         <SourceNote>
           {tx(
@@ -1226,6 +1231,341 @@ export function DashboardPage({ language }: Props) {
         </div>
       </div>
     </div>
+  );
+}
+
+function CropProductionVisuals() {
+  const [tables, setTables] = useState<{
+    national_production: WorkbookTable;
+    district_production: WorkbookTable;
+  } | null>(null);
+  const [loadError, setLoadError] = useState(false);
+  const [crop, setCrop] = useState("Maize");
+
+  useEffect(() => {
+    let active = true;
+    import("@/data/crop-visuals-2026a.json")
+      .then((module) => {
+        if (active) {
+          setTables({
+            national_production: module.default
+              .national_production as WorkbookTable,
+            district_production: module.default
+              .district_production as WorkbookTable,
+          });
+        }
+      })
+      .catch(() => {
+        if (active) setLoadError(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const summaryRows = new Set([
+    "cereals",
+    "tubers and roots",
+    "banana",
+    "legumes and pulses",
+    "bean",
+    "vegetables and fruits",
+    "total",
+  ]);
+  const nationalTable = tables?.national_production;
+  const currentProductionIndex =
+    nationalTable?.headers.findIndex((header) =>
+      header.includes("Production (MT) · 2026 A"),
+    ) ?? -1;
+  const priorProductionIndex =
+    nationalTable?.headers.findIndex((header) =>
+      header.includes("Production (MT) · 2025 A"),
+    ) ?? -1;
+  const cropRows =
+    nationalTable && currentProductionIndex >= 0 && priorProductionIndex >= 0
+      ? nationalTable.rows
+          .filter(
+            (row) =>
+              !summaryRows.has(String(row[0]).toLowerCase()) &&
+              typeof row[currentProductionIndex] === "number" &&
+              typeof row[priorProductionIndex] === "number",
+          )
+          .map((row) => ({
+            crop: String(row[0]),
+            current: row[currentProductionIndex] as number,
+            prior: row[priorProductionIndex] as number,
+          }))
+      : [];
+  const leadingCrops = [...cropRows]
+    .sort((a, b) => b.current - a.current)
+    .slice(0, 8)
+    .reverse();
+  const selectedCrop = cropRows.find((row) => row.crop === crop) ?? cropRows[0];
+  const districtTable = tables?.district_production;
+  const cropColumnAliases: Record<string, string> = {
+    "Taro &Yams": "Yams & Taro",
+    Groundnut: "Groundnuts",
+  };
+  const normalizeHeader = (value: string) =>
+    value.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const districtCropColumn = selectedCrop
+    ? (cropColumnAliases[selectedCrop.crop] ?? selectedCrop.crop)
+    : "";
+  const districtCropColumnIndex =
+    districtTable?.headers.findIndex(
+      (header) =>
+        normalizeHeader(header) === normalizeHeader(districtCropColumn),
+    ) ?? -1;
+  const includedDistricts = new Set(
+    (districtLand2026a.observations as DistrictObservation[])
+      .filter((row) => row.district !== "National")
+      .map((row) => row.district),
+  );
+  const districtValues: Array<{ district: string; production: number }> =
+    districtTable && districtCropColumnIndex >= 0
+      ? districtTable.rows
+          .filter((row) => includedDistricts.has(String(row[0])))
+          .map((row) => ({
+            district: String(row[0]),
+            production: row[districtCropColumnIndex],
+          }))
+          .filter(
+            (row): row is { district: string; production: number } =>
+              typeof row.production === "number",
+          )
+          .sort((a, b) => a.production - b.production)
+      : [];
+  const leadingDistricts = districtValues.slice(-10);
+  const topDistrict = districtValues[districtValues.length - 1];
+  const percentageChange =
+    selectedCrop && selectedCrop.prior !== 0
+      ? ((selectedCrop.current - selectedCrop.prior) / selectedCrop.prior) * 100
+      : null;
+  const compactTonnes = (value: number) =>
+    value >= 1_000_000
+      ? `${(value / 1_000_000).toFixed(1)}m`
+      : `${Math.round(value / 1_000)}k`;
+  const formatTonnes = (value: number) =>
+    `${value.toLocaleString("en", { maximumFractionDigits: 0 })} MT`;
+
+  return (
+    <section className="mt-7" aria-labelledby="crop-visuals-heading">
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[.14em] text-primary">
+            2026 SEASON A · DETAILED NISR TABLES
+          </p>
+          <h2
+            id="crop-visuals-heading"
+            className="display-font mt-1 text-[20px] font-bold tracking-[-.035em]"
+          >
+            Crop production, down to the district
+          </h2>
+          <p className="mt-1 max-w-[760px] text-[11px] leading-5 text-muted-foreground">
+            Compare like-for-like national crop output with Season A 2025, then
+            explore which districts report the most of a selected crop.
+          </p>
+        </div>
+        <Link
+          href="/data"
+          className="text-[10px] font-semibold text-primary hover:underline"
+        >
+          Browse all 35 source tables{" "}
+          <ArrowRight size={12} className="ml-1 inline" />
+        </Link>
+      </div>
+
+      {loadError ? (
+        <div className="rounded-xl border border-border bg-card p-5 text-[12px] text-muted-foreground">
+          Crop charts could not load. Open the data explorer to browse the
+          source tables.
+        </div>
+      ) : !tables ? (
+        <div
+          className="rounded-xl border border-border bg-card p-5 text-[12px] text-muted-foreground"
+          role="status"
+        >
+          Loading the 2026 Season A crop tables…
+        </div>
+      ) : (
+        <div className="grid gap-4 xl:grid-cols-2">
+          <article className="rounded-xl border border-border bg-card p-4 sm:p-5">
+            <div className="mb-2">
+              <p className="text-[9px] font-bold uppercase tracking-[.13em] text-primary">
+                NATIONAL PRODUCTION · METRIC TONNES
+              </p>
+              <h3 className="display-font mt-1 text-[16px] font-bold">
+                Crops with the highest reported output
+              </h3>
+              <p className="mt-1 text-[10px] text-muted-foreground">
+                Same season, two years: 2025 A and 2026 A.
+              </p>
+            </div>
+            <div className="h-[330px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={leadingCrops}
+                  layout="vertical"
+                  margin={{ top: 8, right: 14, bottom: 2, left: 2 }}
+                  barCategoryGap={8}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="#e7e4d8"
+                    horizontal={false}
+                  />
+                  <XAxis
+                    type="number"
+                    tick={{ fontSize: 9 }}
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={compactTonnes}
+                  />
+                  <YAxis
+                    type="category"
+                    dataKey="crop"
+                    width={112}
+                    tick={{ fontSize: 9 }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <Tooltip
+                    formatter={(value: number) => [formatTonnes(value)]}
+                    contentStyle={{
+                      borderRadius: 10,
+                      border: "1px solid #dedbcc",
+                      fontSize: 10,
+                    }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 10 }} />
+                  <Bar
+                    dataKey="prior"
+                    name="2025 Season A"
+                    fill="#aabd91"
+                    radius={[0, 3, 3, 0]}
+                  />
+                  <Bar
+                    dataKey="current"
+                    name="2026 Season A"
+                    fill="#315f47"
+                    radius={[0, 3, 3, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <p className="mt-1 text-[10px] leading-4 text-muted-foreground">
+              Headline group totals are excluded so cereals, tubers and
+              constituent crops are not counted twice.
+            </p>
+            <div className="mt-3">
+              <SourceLink
+                sourceId={tables.national_production.source_id}
+                label="Source: NISR SAS 2026 Season A, Table 6"
+              />
+            </div>
+          </article>
+
+          <article className="rounded-xl border border-border bg-card p-4 sm:p-5">
+            <div className="mb-2 flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <p className="text-[9px] font-bold uppercase tracking-[.13em] text-primary">
+                  DISTRICT RANKING · METRIC TONNES
+                </p>
+                <h3 className="display-font mt-1 text-[16px] font-bold">
+                  Where is this crop produced?
+                </h3>
+              </div>
+              <div className="w-full sm:w-[190px]">
+                <NativeSelect
+                  label="Crop"
+                  value={selectedCrop?.crop ?? ""}
+                  onChange={setCrop}
+                  options={cropRows.map((row) => ({
+                    value: row.crop,
+                    label: row.crop,
+                  }))}
+                  testId="select-dashboard-crop"
+                />
+              </div>
+            </div>
+            <p className="mb-2 text-[10px] text-muted-foreground">
+              Top {leadingDistricts.length} of {includedDistricts.size} named
+              districts · 2026 Season A · {selectedCrop?.crop}
+            </p>
+            <div className="h-[330px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={leadingDistricts}
+                  layout="vertical"
+                  margin={{ top: 3, right: 16, bottom: 2, left: 3 }}
+                  barCategoryGap={7}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="#e7e4d8"
+                    horizontal={false}
+                  />
+                  <XAxis
+                    type="number"
+                    tick={{ fontSize: 9 }}
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={compactTonnes}
+                  />
+                  <YAxis
+                    type="category"
+                    dataKey="district"
+                    width={90}
+                    tick={{ fontSize: 9 }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <Tooltip
+                    formatter={(value: number) => [
+                      formatTonnes(value),
+                      selectedCrop?.crop,
+                    ]}
+                    contentStyle={{
+                      borderRadius: 10,
+                      border: "1px solid #dedbcc",
+                      fontSize: 10,
+                    }}
+                  />
+                  <Bar
+                    dataKey="production"
+                    name={selectedCrop?.crop ?? "Production"}
+                    fill="#64874e"
+                    radius={[0, 3, 3, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <p className="mt-1 text-[10px] leading-4 text-muted-foreground">
+              {topDistrict ? (
+                <>
+                  Highest shown: <strong>{topDistrict.district}</strong> at{" "}
+                  {formatTonnes(topDistrict.production)}. Production is not a
+                  measure of yield or productivity.
+                </>
+              ) : (
+                "No district values are available for this crop."
+              )}
+            </p>
+            <div className="mt-3">
+              <SourceLink
+                sourceId={tables.district_production.source_id}
+                label="Source: NISR SAS 2026 Season A, Table 15"
+              />
+            </div>
+          </article>
+        </div>
+      )}
+      <p className="mt-3 text-[10px] leading-4 text-muted-foreground">
+        {selectedCrop
+          ? `${selectedCrop.crop}: ${formatTonnes(selectedCrop.current)} in 2026 Season A versus ${formatTonnes(selectedCrop.prior)} in 2025 Season A (${percentageChange === null ? "change unavailable" : `${percentageChange >= 0 ? "+" : ""}${percentageChange.toFixed(1)}%`}). This is an arithmetic difference between published estimates, not a test of statistical significance.`
+          : "Crop production and district rankings are drawn from the 2026 Season A workbook."}
+      </p>
+    </section>
   );
 }
 
