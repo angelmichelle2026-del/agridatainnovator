@@ -1,0 +1,56 @@
+{
+  "source_url": "https://www.gov.rw/government/directory/local-government",
+  "checked_on": "2026-10-10",
+  "entities": [
+    {
+      "name": "City of Kigali",
+      "rw_name": "Umujyi wa Kigali",
+      "districts": ["Gasabo", "Kicukiro", "Nyarugenge"]
+    },
+    {
+      "name": "Eastern Province",
+      "rw_name": "Intara y’Iburasirazuba",
+      "districts": [
+        "Bugesera",
+        "Gatsibo",
+        "Kayonza",
+        "Kirehe",
+        "Ngoma",
+        "Nyagatare",
+        "Rwamagana"
+      ]
+    },
+    {
+      "name": "Northern Province",
+      "rw_name": "Intara y’Amajyaruguru",
+      "districts": ["Burera", "Gakenke", "Gicumbi", "Musanze", "Rulindo"]
+    },
+    {
+      "name": "Southern Province",
+      "rw_name": "Intara y’Amajyepfo",
+      "districts": [
+        "Gisagara",
+        "Huye",
+        "Kamonyi",
+        "Muhanga",
+        "Nyamagabe",
+        "Nyanza",
+        "Nyaruguru",
+        "Ruhango"
+      ]
+    },
+    {
+      "name": "Western Province",
+      "rw_name": "Intara y’Iburengerazuba",
+      "districts": [
+        "Karongi",
+        "Ngororero",
+        "Nyabihu",
+        "Nyamasheke",
+        "Rubavu",
+        "Rusizi",
+        "Rutsiro"
+      ]
+    }
+  ]
+}

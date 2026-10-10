@@ -35,6 +35,12 @@ const cropVisuals2026a = JSON.parse(
     "utf8",
   ),
 );
+const administrativeAreas = JSON.parse(
+  fs.readFileSync(
+    new URL("artifacts/agri-lens-ai/src/data/rwanda-admin-areas.json", root),
+    "utf8",
+  ),
+);
 const sas2026aCsv = fs
   .readFileSync(
     new URL(
@@ -93,6 +99,21 @@ assert.equal(
   new Set(land2026a.observations.map((row) => row.district)).size,
   31,
   "2026 Season A should include 30 unique districts plus National",
+);
+assert.equal(administrativeAreas.entities.length, 5);
+const mappedDistricts = administrativeAreas.entities.flatMap(
+  (entity) => entity.districts,
+);
+const observedDistricts = land2026a.observations
+  .map((row) => row.district)
+  .filter((district) => district !== "National")
+  .sort();
+assert.equal(mappedDistricts.length, 30);
+assert.equal(new Set(mappedDistricts).size, 30);
+assert.deepEqual(
+  [...mappedDistricts].sort(),
+  observedDistricts,
+  "Every named district must map to exactly one official province/city entity",
 );
 assert.equal(sas2026a.tables.length, 35);
 assert.equal(sas2026a.source.worksheet_count, 35);
@@ -176,5 +197,5 @@ assert(
   "Source dashes should survive as null, not zero",
 );
 console.info(
-  `NISR data validation passed: ${land.observations.length + land2026a.observations.length} district-season records (including national totals), ${national.observations.length} national indicators, ${sas2026a.tables.length} workbook tables, and ${national.sources.length} cited sources.`,
+  `NISR data validation passed: ${land.observations.length + land2026a.observations.length} district-season records (including national totals), ${national.observations.length} national indicators, ${sas2026a.tables.length} workbook tables, and ${national.sources.length} cited sources. Administrative mapping: ${administrativeAreas.entities.length} regions, ${mappedDistricts.length} unique districts.`,
 );

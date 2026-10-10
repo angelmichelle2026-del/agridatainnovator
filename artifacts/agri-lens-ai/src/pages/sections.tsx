@@ -31,6 +31,7 @@ import type { Language } from "@/components/app-shell";
 import national from "@/data/national-indicators.json";
 import districtLand from "@/data/district-land-2025.json";
 import districtLand2026a from "@/data/district-land-2026a.json";
+import administrativeAreas from "@/data/rwanda-admin-areas.json";
 
 type Props = { language: Language };
 type Season = "A" | "B" | "C";
@@ -67,18 +68,54 @@ type WorkbookTable = {
   rows: Array<Array<string | number | null>>;
   source_id: string;
 };
+type AdministrativeEntity = {
+  name: string;
+  rw_name: string;
+  districts: string[];
+};
 const observations = national.observations as NationalObservation[];
 const districtRows = [
   ...(districtLand.observations as DistrictObservation[]),
   ...(districtLand2026a.observations as DistrictObservation[]),
 ];
+const districtNames2026a = [
+  ...new Set(
+    (districtLand2026a.observations as DistrictObservation[])
+      .map((row) => row.district)
+      .filter((district) => district !== "National"),
+  ),
+].sort();
 const metricDefinitions = national.metric_definitions as Record<
   string,
   MetricDefinition
 >;
 const sources = national.sources;
+const administrativeEntities =
+  administrativeAreas.entities as AdministrativeEntity[];
 const isRw = (language: Language) => language === "rw";
 const tx = (rw: boolean, en: string, rwText: string) => (rw ? rwText : en);
+function provinceOptions(rw: boolean) {
+  return [
+    { value: "ALL", label: tx(rw, "All Rwanda", "U Rwanda rwose") },
+    ...administrativeEntities.map((entity) => ({
+      value: entity.name,
+      label: rw ? entity.rw_name : entity.name,
+    })),
+  ];
+}
+function districtsInProvince(province: string, allDistricts: string[]) {
+  if (province === "ALL") return [...allDistricts].sort();
+  return (
+    administrativeEntities
+      .find((entity) => entity.name === province)
+      ?.districts.filter((district) => allDistricts.includes(district)) ?? []
+  ).sort();
+}
+function entityForDistrict(district: string) {
+  return administrativeEntities.find((entity) =>
+    entity.districts.includes(district),
+  );
+}
 
 function latestObservation(metric: string) {
   return observations
@@ -181,6 +218,30 @@ function SourceNote({ children }: { children: React.ReactNode }) {
       <ShieldCheck size={15} className="mt-0.5 shrink-0 text-primary" />
       <p>{children}</p>
     </div>
+  );
+}
+function AdministrativeSourceNote({ rw }: { rw: boolean }) {
+  return (
+    <p className="mt-2 text-[10px] leading-4 text-muted-foreground">
+      {tx(
+        rw,
+        "Province and district groupings follow the",
+        "Imiterere y’intara n’uturere ikurikiza",
+      )}{" "}
+      <a
+        href={administrativeAreas.source_url}
+        target="_blank"
+        rel="noreferrer"
+        className="font-semibold text-primary hover:underline"
+      >
+        {tx(
+          rw,
+          "Government of Rwanda local-government directory",
+          "urutonde rw’inzego z’ibanze rwa Leta y’u Rwanda",
+        )}
+      </a>
+      .
+    </p>
   );
 }
 function StatCard({
@@ -1265,7 +1326,7 @@ export function DashboardPage({ language }: Props) {
           </p>
         </article>
       </section>
-      <CropProductionVisuals seasonFilter={seasonFilter} />
+      <CropProductionVisuals seasonFilter={seasonFilter} language={language} />
       <div className="mt-5 grid gap-4 md:grid-cols-[1fr_auto] md:items-center">
         <SourceNote>
           {tx(
@@ -1289,15 +1350,31 @@ export function DashboardPage({ language }: Props) {
 
 function CropProductionVisuals({
   seasonFilter,
+  language,
 }: {
   seasonFilter: "ALL" | Season;
+  language: Language;
 }) {
+  const rw = isRw(language);
   const [tables, setTables] = useState<{
     national_production: WorkbookTable;
     district_production: WorkbookTable;
   } | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [crop, setCrop] = useState("Maize");
+  const [provinceFilter, setProvinceFilter] = useState("ALL");
+  const [districtFilter, setDistrictFilter] = useState("ALL");
+  const provinceDistricts = districtsInProvince(
+    provinceFilter,
+    districtNames2026a,
+  );
+  const handleProvinceChange = (value: string) => {
+    const nextDistricts = districtsInProvince(value, districtNames2026a);
+    if (districtFilter !== "ALL" && !nextDistricts.includes(districtFilter)) {
+      setDistrictFilter("ALL");
+    }
+    setProvinceFilter(value);
+  };
 
   useEffect(() => {
     if (seasonFilter !== "ALL" && seasonFilter !== "A") return;
@@ -1375,15 +1452,15 @@ function CropProductionVisuals({
       (header) =>
         normalizeHeader(header) === normalizeHeader(districtCropColumn),
     ) ?? -1;
-  const includedDistricts = new Set(
-    (districtLand2026a.observations as DistrictObservation[])
-      .filter((row) => row.district !== "National")
-      .map((row) => row.district),
-  );
+  const includedDistricts = new Set(districtNames2026a);
+  const visibleDistricts =
+    districtFilter === "ALL"
+      ? provinceDistricts
+      : provinceDistricts.filter((district) => district === districtFilter);
   const districtValues: Array<{ district: string; production: number }> =
     districtTable && districtCropColumnIndex >= 0
       ? districtTable.rows
-          .filter((row) => includedDistricts.has(String(row[0])))
+          .filter((row) => visibleDistricts.includes(String(row[0])))
           .map((row) => ({
             district: String(row[0]),
             production: row[districtCropColumnIndex],
@@ -1394,7 +1471,8 @@ function CropProductionVisuals({
           )
           .sort((a, b) => a.production - b.production)
       : [];
-  const leadingDistricts = districtValues.slice(-10);
+  const leadingDistricts =
+    districtFilter === "ALL" ? districtValues.slice(-10) : districtValues;
   const topDistrict = districtValues[districtValues.length - 1];
   const percentageChange =
     selectedCrop && selectedCrop.prior !== 0
@@ -1531,32 +1609,57 @@ function CropProductionVisuals({
           </article>
 
           <article className="rounded-xl border border-border bg-card p-4 sm:p-5">
-            <div className="mb-2 flex flex-wrap items-end justify-between gap-3">
-              <div>
-                <p className="text-[9px] font-bold uppercase tracking-[.13em] text-primary">
-                  DISTRICT RANKING · METRIC TONNES
-                </p>
-                <h3 className="display-font mt-1 text-[16px] font-bold">
-                  Where is this crop produced?
-                </h3>
-              </div>
-              <div className="w-full sm:w-[190px]">
-                <NativeSelect
-                  label="Crop"
-                  value={selectedCrop?.crop ?? ""}
-                  onChange={setCrop}
-                  options={cropRows.map((row) => ({
-                    value: row.crop,
-                    label: row.crop,
-                  }))}
-                  testId="select-dashboard-crop"
-                />
-              </div>
+            <div className="mb-2">
+              <p className="text-[9px] font-bold uppercase tracking-[.13em] text-primary">
+                DISTRICT RANKING · METRIC TONNES
+              </p>
+              <h3 className="display-font mt-1 text-[16px] font-bold">
+                Where is this crop produced?
+              </h3>
+            </div>
+            <div className="mb-2 grid gap-2 sm:grid-cols-3">
+              <NativeSelect
+                label={tx(rw, "Province", "Intara")}
+                value={provinceFilter}
+                onChange={handleProvinceChange}
+                options={provinceOptions(rw)}
+                testId="select-dashboard-province"
+              />
+              <NativeSelect
+                label={tx(rw, "District", "Akarere")}
+                value={districtFilter}
+                onChange={setDistrictFilter}
+                options={[
+                  {
+                    value: "ALL",
+                    label: tx(rw, "All districts", "Uturere twose"),
+                  },
+                  ...provinceDistricts.map((name) => ({
+                    value: name,
+                    label: name,
+                  })),
+                ]}
+                testId="select-dashboard-district"
+              />
+              <NativeSelect
+                label={tx(rw, "Crop", "Igihingwa")}
+                value={selectedCrop?.crop ?? ""}
+                onChange={setCrop}
+                options={cropRows.map((row) => ({
+                  value: row.crop,
+                  label: row.crop,
+                }))}
+                testId="select-dashboard-crop"
+              />
             </div>
             <p className="mb-2 text-[10px] text-muted-foreground">
-              Top {leadingDistricts.length} of {includedDistricts.size} named
-              districts · 2026 Season A · {selectedCrop?.crop}
+              {districtFilter === "ALL"
+                ? provinceFilter === "ALL"
+                  ? `Top ${leadingDistricts.length} of ${includedDistricts.size} districts · All Rwanda`
+                  : `Showing ${districtValues.length} districts in ${provinceFilter}`
+                : `Selected district: ${districtFilter} · ${entityForDistrict(districtFilter)?.name ?? provinceFilter} · 2026 Season A`}
             </p>
+            <AdministrativeSourceNote rw={rw} />
             <div className="h-[330px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
@@ -1600,6 +1703,7 @@ function CropProductionVisuals({
                     dataKey="production"
                     name={selectedCrop?.crop ?? "Production"}
                     fill="#64874e"
+                    barSize={24}
                     radius={[0, 3, 3, 0]}
                   />
                 </BarChart>
@@ -1608,7 +1712,10 @@ function CropProductionVisuals({
             <p className="mt-1 text-[10px] leading-4 text-muted-foreground">
               {topDistrict ? (
                 <>
-                  Highest shown: <strong>{topDistrict.district}</strong> at{" "}
+                  {districtFilter === "ALL"
+                    ? "Highest shown: "
+                    : "Reported output in "}
+                  <strong>{topDistrict.district}</strong> at{" "}
                   {formatTonnes(topDistrict.production)}. Production is not a
                   measure of yield or productivity.
                 </>
@@ -1648,10 +1755,35 @@ export function ComparePage({ language }: Props) {
         .filter((name) => name !== "National"),
     ),
   ].sort();
+  const [province, setProvince] = useState("ALL");
   const [left, setLeft] = useState("Nyagatare");
   const [right, setRight] = useState("Gisagara");
   const [period, setPeriod] = useState("2025 · A");
   const [metric, setMetric] = useState<string>(String(DISTRICT_METRICS[0].key));
+  const scopedDistricts = districtsInProvince(province, districts);
+  const handleProvinceChange = (value: string) => {
+    const nextDistricts = districtsInProvince(value, districts);
+    const nextLeft = nextDistricts.includes(left) ? left : nextDistricts[0];
+    const nextRight =
+      nextDistricts.includes(right) && right !== nextLeft
+        ? right
+        : (nextDistricts.find((district) => district !== nextLeft) ?? nextLeft);
+    setProvince(value);
+    setLeft(nextLeft);
+    setRight(nextRight);
+  };
+  const handleLeftChange = (value: string) => {
+    setLeft(value);
+    if (value === right) {
+      setRight(scopedDistricts.find((district) => district !== value) ?? value);
+    }
+  };
+  const handleRightChange = (value: string) => {
+    setRight(value);
+    if (value === left) {
+      setLeft(scopedDistricts.find((district) => district !== value) ?? value);
+    }
+  };
   const selectedMetric =
     DISTRICT_METRICS.find((item) => item.key === metric) ?? DISTRICT_METRICS[0];
   const rowFor = (district: string) =>
@@ -1678,20 +1810,27 @@ export function ComparePage({ language }: Props) {
         title={tx(rw, "Compare districts", "Gereranya uturere")}
         description={tx(
           rw,
-          "Choose two districts and a matching survey period to see reported land use side by side. It’s land only—not input use or crop yields.",
-          "Gereranya imibare y’ubutaka bw’uturere tubiri muri season ihwanye. Iyi mibare ni iy’ikoreshwa ry’ubutaka, si iy’imikoreshereze y’ibikoresho cyangwa umusaruro.",
+          "Choose a province to narrow the district choices, then compare two districts for the same survey period. This is land use—not input use or crop yields.",
+          "Hitamo intara kugira ngo uhitemo uturere tuyirimo, hanyuma ugereranye uturere tubiri muri season imwe. Iyi mibare ni iy’imikoreshereze y’ubutaka, si iy’ibikoresho cyangwa umusaruro.",
         )}
       />
       <section
         className="rounded-2xl border border-border bg-card p-4 sm:p-6"
         data-testid="district-comparison"
       >
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          <NativeSelect
+            label={label(rw, "Province", "Intara")}
+            value={province}
+            onChange={handleProvinceChange}
+            options={provinceOptions(rw)}
+            testId="select-compare-province"
+          />
           <NativeSelect
             label={label(rw, "First district", "Akarere ka mbere")}
             value={left}
-            onChange={setLeft}
-            options={districts.map((district) => ({
+            onChange={handleLeftChange}
+            options={scopedDistricts.map((district) => ({
               value: district,
               label: district,
             }))}
@@ -1700,8 +1839,8 @@ export function ComparePage({ language }: Props) {
           <NativeSelect
             label={label(rw, "Second district", "Akarere ka kabiri")}
             value={right}
-            onChange={setRight}
-            options={districts.map((district) => ({
+            onChange={handleRightChange}
+            options={scopedDistricts.map((district) => ({
               value: district,
               label: district,
             }))}
@@ -1808,6 +1947,7 @@ export function ComparePage({ language }: Props) {
             "NISR itanga ubutaka mu bihumbi bya hegitari. Umubare w’igihugu nturi mu mahitamo y’uturere. Imibare ishobora kuba yarazengurutswe; utudomo dufatwa nk’amakuru adahari, si zeru.",
           )}
         </SourceNote>
+        <AdministrativeSourceNote rw={rw} />
       </div>
     </div>
   );
