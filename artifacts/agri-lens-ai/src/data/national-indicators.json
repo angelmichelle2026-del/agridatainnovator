@@ -1,0 +1,478 @@
+{
+  "sources": [
+    {
+      "id": "nisr-sas-2025-annual-report",
+      "publisher": "National Institute of Statistics of Rwanda (NISR)",
+      "title": "Seasonal Agricultural Survey (SAS) 2025 Annual Report",
+      "period": "Agricultural year 2024/2025",
+      "source_url": "https://statistics.gov.rw/sites/default/files/documents/2025-12/SAS%202025%20Final%20report.pdf",
+      "landing_url": "https://www.statistics.gov.rw/data-sources/surveys/Seasonal-Agricultural-Survey/Seasonal-Agricultural-Survey/seasonal-agricultural-survey-2025-",
+      "tables": [
+        "Summary of SAS main indicators",
+        "Table 9: Season A district land use",
+        "Table 10: Season B district land use"
+      ],
+      "note": "Published NISR survey estimates. The report covers the 2024/2025 agricultural year and Seasons A, B and C. District-level land-use rows are available here for Seasons A and B only."
+    },
+    {
+      "id": "nisr-sas-2026-season-a",
+      "publisher": "National Institute of Statistics of Rwanda (NISR)",
+      "title": "Seasonal Agricultural Survey — Season A, 2026",
+      "period": "September 2025 to February 2026",
+      "source_url": "https://www.statistics.gov.rw/statistical-publications/agriculture-environment/seasonal-agricultural-survey-season-2026",
+      "note": "NISR reports collection across all 30 districts, 1,200 segments and 554 large-scale farmers. The published page provides national values used in this prototype."
+    },
+    {
+      "id": "nisr-sas-2026-season-b",
+      "publisher": "National Institute of Statistics of Rwanda (NISR)",
+      "title": "Seasonal Agricultural Survey — Season B, 2026",
+      "period": "March 2026 to June 2026",
+      "source_url": "https://statistics.gov.rw/statistical-publications/agriculture-environment/seasonal-agricultural-survey-season-b-2026",
+      "note": "NISR reports collection across all 30 districts, 1,200 segments and 505 large-scale farmers. The published page provides national values used in this prototype."
+    }
+  ],
+  "metric_definitions": {
+    "improved_seed_use": {
+      "label": "Farmers using improved seeds",
+      "unit": "% of farmers",
+      "category": "Input use"
+    },
+    "organic_fertilizer_use": {
+      "label": "Farmers applying organic fertilizer",
+      "unit": "% of farmers",
+      "category": "Input use"
+    },
+    "inorganic_fertilizer_use": {
+      "label": "Farmers applying inorganic fertilizer",
+      "unit": "% of farmers",
+      "category": "Input use"
+    },
+    "pesticide_use": {
+      "label": "Farmers applying pesticides",
+      "unit": "% of farmers",
+      "category": "Input use"
+    },
+    "irrigation_practice": {
+      "label": "Farmers practicing irrigation",
+      "unit": "% of farmers",
+      "category": "Practice"
+    },
+    "anti_erosion_practice": {
+      "label": "Farmers practicing anti-erosion measures",
+      "unit": "% of farmers",
+      "category": "Practice"
+    },
+    "agroforestry_practice": {
+      "label": "Farmers practicing agroforestry",
+      "unit": "% of farmers",
+      "category": "Practice"
+    },
+    "mechanical_equipment_use": {
+      "label": "Farmers using mechanical equipment",
+      "unit": "% of farmers",
+      "category": "Practice"
+    },
+    "agricultural_land": {
+      "label": "Land used for agriculture",
+      "unit": "thousand hectares",
+      "category": "Land use"
+    },
+    "agricultural_land_share": {
+      "label": "Agricultural land as share of national land",
+      "unit": "% of national land",
+      "category": "Land use"
+    },
+    "seasonal_crop_area": {
+      "label": "Area allocated to seasonal crops",
+      "unit": "thousand hectares",
+      "category": "Land use"
+    },
+    "permanent_crop_area": {
+      "label": "Area allocated to permanent crops",
+      "unit": "thousand hectares",
+      "category": "Land use"
+    },
+    "permanent_pasture_area": {
+      "label": "Area allocated to permanent pasture",
+      "unit": "thousand hectares",
+      "category": "Land use"
+    }
+  },
+  "observations": [
+    {
+      "year": 2025,
+      "season": "A",
+      "metric": "improved_seed_use",
+      "value": 37.3,
+      "source_id": "nisr-sas-2025-annual-report"
+    },
+    {
+      "year": 2025,
+      "season": "A",
+      "metric": "organic_fertilizer_use",
+      "value": 88.0,
+      "source_id": "nisr-sas-2025-annual-report"
+    },
+    {
+      "year": 2025,
+      "season": "A",
+      "metric": "inorganic_fertilizer_use",
+      "value": 63.2,
+      "source_id": "nisr-sas-2025-annual-report"
+    },
+    {
+      "year": 2025,
+      "season": "A",
+      "metric": "pesticide_use",
+      "value": 41.9,
+      "source_id": "nisr-sas-2025-annual-report"
+    },
+    {
+      "year": 2025,
+      "season": "A",
+      "metric": "irrigation_practice",
+      "value": 13.4,
+      "source_id": "nisr-sas-2025-annual-report"
+    },
+    {
+      "year": 2025,
+      "season": "A",
+      "metric": "anti_erosion_practice",
+      "value": 90.3,
+      "source_id": "nisr-sas-2025-annual-report"
+    },
+    {
+      "year": 2025,
+      "season": "A",
+      "metric": "agricultural_land",
+      "value": 1399,
+      "source_id": "nisr-sas-2025-annual-report"
+    },
+    {
+      "year": 2025,
+      "season": "A",
+      "metric": "agricultural_land_share",
+      "value": 59,
+      "source_id": "nisr-sas-2025-annual-report"
+    },
+    {
+      "year": 2025,
+      "season": "A",
+      "metric": "seasonal_crop_area",
+      "value": 1019,
+      "source_id": "nisr-sas-2025-annual-report"
+    },
+    {
+      "year": 2025,
+      "season": "A",
+      "metric": "permanent_crop_area",
+      "value": 492,
+      "source_id": "nisr-sas-2025-annual-report"
+    },
+    {
+      "year": 2025,
+      "season": "A",
+      "metric": "permanent_pasture_area",
+      "value": 96,
+      "source_id": "nisr-sas-2025-annual-report"
+    },
+
+    {
+      "year": 2025,
+      "season": "B",
+      "metric": "improved_seed_use",
+      "value": 18.0,
+      "source_id": "nisr-sas-2025-annual-report"
+    },
+    {
+      "year": 2025,
+      "season": "B",
+      "metric": "organic_fertilizer_use",
+      "value": 80.8,
+      "source_id": "nisr-sas-2025-annual-report"
+    },
+    {
+      "year": 2025,
+      "season": "B",
+      "metric": "inorganic_fertilizer_use",
+      "value": 55.5,
+      "source_id": "nisr-sas-2025-annual-report"
+    },
+    {
+      "year": 2025,
+      "season": "B",
+      "metric": "pesticide_use",
+      "value": 36.6,
+      "source_id": "nisr-sas-2025-annual-report"
+    },
+    {
+      "year": 2025,
+      "season": "B",
+      "metric": "irrigation_practice",
+      "value": 11.5,
+      "source_id": "nisr-sas-2025-annual-report"
+    },
+    {
+      "year": 2025,
+      "season": "B",
+      "metric": "anti_erosion_practice",
+      "value": 89.9,
+      "source_id": "nisr-sas-2025-annual-report"
+    },
+    {
+      "year": 2025,
+      "season": "B",
+      "metric": "agricultural_land",
+      "value": 1423,
+      "source_id": "nisr-sas-2025-annual-report"
+    },
+    {
+      "year": 2025,
+      "season": "B",
+      "metric": "agricultural_land_share",
+      "value": 60,
+      "source_id": "nisr-sas-2025-annual-report"
+    },
+    {
+      "year": 2025,
+      "season": "B",
+      "metric": "seasonal_crop_area",
+      "value": 1022,
+      "source_id": "nisr-sas-2025-annual-report"
+    },
+    {
+      "year": 2025,
+      "season": "B",
+      "metric": "permanent_crop_area",
+      "value": 524,
+      "source_id": "nisr-sas-2025-annual-report"
+    },
+    {
+      "year": 2025,
+      "season": "B",
+      "metric": "permanent_pasture_area",
+      "value": 100,
+      "source_id": "nisr-sas-2025-annual-report"
+    },
+
+    {
+      "year": 2025,
+      "season": "C",
+      "metric": "improved_seed_use",
+      "value": 18.9,
+      "source_id": "nisr-sas-2025-annual-report"
+    },
+    {
+      "year": 2025,
+      "season": "C",
+      "metric": "organic_fertilizer_use",
+      "value": 83.5,
+      "source_id": "nisr-sas-2025-annual-report"
+    },
+    {
+      "year": 2025,
+      "season": "C",
+      "metric": "inorganic_fertilizer_use",
+      "value": 65.8,
+      "source_id": "nisr-sas-2025-annual-report"
+    },
+    {
+      "year": 2025,
+      "season": "C",
+      "metric": "pesticide_use",
+      "value": 67.0,
+      "source_id": "nisr-sas-2025-annual-report"
+    },
+    {
+      "year": 2025,
+      "season": "C",
+      "metric": "irrigation_practice",
+      "value": 58.9,
+      "source_id": "nisr-sas-2025-annual-report"
+    },
+    {
+      "year": 2025,
+      "season": "C",
+      "metric": "anti_erosion_practice",
+      "value": 94.7,
+      "source_id": "nisr-sas-2025-annual-report"
+    },
+
+    {
+      "year": 2026,
+      "season": "A",
+      "metric": "improved_seed_use",
+      "value": 37.0,
+      "source_id": "nisr-sas-2026-season-a"
+    },
+    {
+      "year": 2026,
+      "season": "A",
+      "metric": "organic_fertilizer_use",
+      "value": 90.2,
+      "source_id": "nisr-sas-2026-season-a"
+    },
+    {
+      "year": 2026,
+      "season": "A",
+      "metric": "inorganic_fertilizer_use",
+      "value": 67.2,
+      "source_id": "nisr-sas-2026-season-a"
+    },
+    {
+      "year": 2026,
+      "season": "A",
+      "metric": "pesticide_use",
+      "value": 46.9,
+      "source_id": "nisr-sas-2026-season-a"
+    },
+    {
+      "year": 2026,
+      "season": "A",
+      "metric": "irrigation_practice",
+      "value": 14.4,
+      "source_id": "nisr-sas-2026-season-a"
+    },
+    {
+      "year": 2026,
+      "season": "A",
+      "metric": "anti_erosion_practice",
+      "value": 92.4,
+      "source_id": "nisr-sas-2026-season-a"
+    },
+    {
+      "year": 2026,
+      "season": "A",
+      "metric": "agroforestry_practice",
+      "value": 53.4,
+      "source_id": "nisr-sas-2026-season-a"
+    },
+    {
+      "year": 2026,
+      "season": "A",
+      "metric": "mechanical_equipment_use",
+      "value": 1.7,
+      "source_id": "nisr-sas-2026-season-a"
+    },
+    {
+      "year": 2026,
+      "season": "A",
+      "metric": "agricultural_land",
+      "value": 1376,
+      "source_id": "nisr-sas-2026-season-a"
+    },
+    {
+      "year": 2026,
+      "season": "A",
+      "metric": "agricultural_land_share",
+      "value": 58,
+      "source_id": "nisr-sas-2026-season-a"
+    },
+    {
+      "year": 2026,
+      "season": "A",
+      "metric": "seasonal_crop_area",
+      "value": 1043,
+      "source_id": "nisr-sas-2026-season-a"
+    },
+    {
+      "year": 2026,
+      "season": "A",
+      "metric": "permanent_crop_area",
+      "value": 501,
+      "source_id": "nisr-sas-2026-season-a"
+    },
+    {
+      "year": 2026,
+      "season": "A",
+      "metric": "permanent_pasture_area",
+      "value": 84,
+      "source_id": "nisr-sas-2026-season-a"
+    },
+
+    {
+      "year": 2026,
+      "season": "B",
+      "metric": "improved_seed_use",
+      "value": 20.9,
+      "source_id": "nisr-sas-2026-season-b"
+    },
+    {
+      "year": 2026,
+      "season": "B",
+      "metric": "organic_fertilizer_use",
+      "value": 81.3,
+      "source_id": "nisr-sas-2026-season-b"
+    },
+    {
+      "year": 2026,
+      "season": "B",
+      "metric": "inorganic_fertilizer_use",
+      "value": 57.5,
+      "source_id": "nisr-sas-2026-season-b"
+    },
+    {
+      "year": 2026,
+      "season": "B",
+      "metric": "pesticide_use",
+      "value": 39.1,
+      "source_id": "nisr-sas-2026-season-b"
+    },
+    {
+      "year": 2026,
+      "season": "B",
+      "metric": "irrigation_practice",
+      "value": 13.1,
+      "source_id": "nisr-sas-2026-season-b"
+    },
+    {
+      "year": 2026,
+      "season": "B",
+      "metric": "agroforestry_practice",
+      "value": 58.0,
+      "source_id": "nisr-sas-2026-season-b"
+    },
+    {
+      "year": 2026,
+      "season": "B",
+      "metric": "mechanical_equipment_use",
+      "value": 1.8,
+      "source_id": "nisr-sas-2026-season-b"
+    },
+    {
+      "year": 2026,
+      "season": "B",
+      "metric": "agricultural_land",
+      "value": 1414,
+      "source_id": "nisr-sas-2026-season-b"
+    },
+    {
+      "year": 2026,
+      "season": "B",
+      "metric": "agricultural_land_share",
+      "value": 59,
+      "source_id": "nisr-sas-2026-season-b"
+    },
+    {
+      "year": 2026,
+      "season": "B",
+      "metric": "seasonal_crop_area",
+      "value": 1022,
+      "source_id": "nisr-sas-2026-season-b"
+    },
+    {
+      "year": 2026,
+      "season": "B",
+      "metric": "permanent_crop_area",
+      "value": 526,
+      "source_id": "nisr-sas-2026-season-b"
+    },
+    {
+      "year": 2026,
+      "season": "B",
+      "metric": "permanent_pasture_area",
+      "value": 83,
+      "source_id": "nisr-sas-2026-season-b"
+    }
+  ]
+}

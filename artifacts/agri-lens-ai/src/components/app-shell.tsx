@@ -64,8 +64,8 @@ export function AppShell({ children, language, onLanguageChange }: Props) {
               <span className="h-2 w-2 rounded-full bg-[#c4d79d]" />
               <span className="text-[10px] font-bold uppercase tracking-[.12em]">{rw ? 'IMITERERE Y’AMAKURU' : 'DATA STATUS'}</span>
             </div>
-            <p className="text-[12px] font-semibold leading-5 text-white/90">{rw ? 'Amakuru nyakuri ntarashyirwamo.' : 'No source data loaded yet.'}</p>
-            <p className="mt-1.5 text-[11px] leading-[1.55] text-white/50">{rw ? 'Ibikoresho by’imibare bizagaragara amakuru amaze gutegurwa.' : 'Planning tools will become available once verified data is prepared.'}</p>
+            <p className="text-[12px] font-semibold leading-5 text-white/90">{rw ? 'Imibare ya NISR yashyizwemo.' : 'Verified NISR survey data loaded.'}</p>
+            <p className="mt-1.5 text-[11px] leading-[1.55] text-white/50">{rw ? 'Seasonal survey n’imibare y’uturere ya 2025–2026.' : 'National seasonal indicators and 2025 district land use.'}</p>
             <Link href="/about" className="mt-3 inline-flex items-center gap-1 text-[11px] font-semibold text-[#d5e3bb] hover:text-white" data-testid="link-sidebar-methodology">
               {rw ? 'Soma ibisobanuro' : 'Read the approach'} <ArrowUpRight size={13} />
             </Link>
