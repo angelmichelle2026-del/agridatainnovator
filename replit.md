@@ -1,9 +1,13 @@
-# [Project name]
+# AgriLens AI
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+An independent prototype that will make verified Rwanda agricultural statistics easier to discover and use for district planners.
 
 ## Run & Operate
 
+- `pnpm --filter @workspace/agri-lens-ai run dev` — run the AgriLens web app
+- `pnpm --filter @workspace/agri-lens-ai run typecheck` — check the AgriLens frontend
+- `pnpm --filter @workspace/agri-lens-ai run test:smoke` — check the running app's entry page
+- `pnpm --filter @workspace/agri-lens-ai run build` — build the AgriLens frontend
 - `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
@@ -22,23 +26,32 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- AgriLens web app: `artifacts/agri-lens-ai/`
+- Shared API: `artifacts/api-server/`
+- API contract: `lib/api-spec/openapi.yaml`
+- Database schema: `lib/db/src/schema/`
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Build the MVP in small, verifiable phases; preserve working parts.
+- Use deterministic, source-grounded data queries before considering optional AI phrasing.
+- Only use verified source data; never invent figures, datasets, citations, download status, or licenses.
+- Treat productivity signals as prompts to investigate, not proof of a cause or problem.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+The intended primary users are Rwanda district agricultural planners. The planned MVP includes a data access hub, dashboard and valid comparisons, transparent productivity signals, and constrained source-cited Q&A. The Phase 1 shell contains no agricultural observations. This is an independent hackathon prototype, not an official NISR service.
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- Keep implementation staged and focused on practical value from verified NISR data.
+- Do not present fabricated or unverified agricultural statistics as real.
+- Support English and Kinyarwanda for core interface text without overstating translation coverage.
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- The attached research is an executive summary, not a verified source catalog or actual NISR workbook. Verify source files, schemas, URLs, and licensing before ingestion or attribution.
+- There are no agricultural workbooks or processed observations in this project yet. Keep data pages explicit until real data has been supplied and validated.
 
 ## Pointers
 

@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "AgriLens AI"
+description = "A bilingual agricultural data access and decision-support platform for Rwanda’s district planners, researchers, and extension workers. This first phase establishes the responsive app shell and honest empty states while source datasets are verified."
+version = "1.0.0"
+id = "artifacts/agri-lens-ai"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24202
+
+[services.development]
+run = "pnpm --filter @workspace/agri-lens-ai run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/agri-lens-ai", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/agri-lens-ai/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24202"
+BASE_PATH = "/"
