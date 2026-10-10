@@ -14,6 +14,31 @@ const national = JSON.parse(
     "utf8",
   ),
 );
+const land2026a = JSON.parse(
+  fs.readFileSync(
+    new URL("artifacts/agri-lens-ai/src/data/district-land-2026a.json", root),
+    "utf8",
+  ),
+);
+const sas2026a = JSON.parse(
+  fs.readFileSync(
+    new URL(
+      "artifacts/agri-lens-ai/src/data/nisr-sas-2026-season-a-tables.json",
+      root,
+    ),
+    "utf8",
+  ),
+);
+const sas2026aCsv = fs
+  .readFileSync(
+    new URL(
+      "artifacts/agri-lens-ai/public/data/district-land-2026-season-a.csv",
+      root,
+    ),
+    "utf8",
+  )
+  .trim()
+  .split(/\r?\n/);
 const csv = fs
   .readFileSync(
     new URL("artifacts/agri-lens-ai/public/data/district-land-2025.csv", root),
@@ -56,7 +81,40 @@ assert.equal(
   146.7,
 );
 assert.equal(national.observations.length, 53);
-assert.equal(national.sources.length, 3);
+assert.equal(national.sources.length, 4);
+assert.equal(land2026a.observations.length, 31);
+assert.equal(
+  new Set(land2026a.observations.map((row) => row.district)).size,
+  31,
+  "2026 Season A should include 30 unique districts plus National",
+);
+assert.equal(sas2026a.tables.length, 35);
+assert.equal(sas2026a.source.worksheet_count, 35);
+assert.equal(sas2026a.tables[34].headers[0], "District");
+assert.equal(
+  sas2026aCsv.length,
+  32,
+  "2026 A district CSV should contain header and 31 rows",
+);
+const land2026aNational = land2026a.observations.find(
+  (row) => row.district === "National",
+);
+assert.equal(land2026aNational.agricultural_land_000ha, 1376.3527);
+const cropProduction = sas2026a.tables.find((table) => table.number === 6);
+const maize2026a = cropProduction.rows.find((row) => row[0] === "Maize");
+const maizeProductionColumn = cropProduction.headers.findIndex((header) =>
+  header.includes("Production (MT) · 2026 A"),
+);
+assert.equal(maize2026a[maizeProductionColumn], 488622.343227443);
+assert(
+  fs.statSync(
+    new URL(
+      "artifacts/agri-lens-ai/public/data/nisr-sas-2026-season-a-tables.xlsx",
+      root,
+    ),
+  ).size > 100000,
+  "The full supplied workbook should be available for download",
+);
 assert.equal(
   national.observations.find(
     (row) =>
@@ -92,5 +150,5 @@ assert(
   "Source dashes should survive as null, not zero",
 );
 console.info(
-  `NISR data validation passed: ${land.observations.length} district-season rows, ${national.observations.length} national observations, ${national.sources.length} cited sources.`,
+  `NISR data validation passed: ${land.observations.length + land2026a.observations.length} district-season records (including national totals), ${national.observations.length} national indicators, ${sas2026a.tables.length} workbook tables, and ${national.sources.length} cited sources.`,
 );

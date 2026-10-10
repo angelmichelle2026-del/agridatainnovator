@@ -1,44 +1,41 @@
 # AgriLens AI
 
-AgriLens AI is an independent Rwanda agriculture-planning prototype. Its web app now includes verified, source-linked observations from NISR’s Seasonal Agricultural Survey (SAS): national seasonal indicators through 2026 Season B and 2025 district land-use tables.
+AgriLens AI is an independent Rwanda agriculture-planning prototype. The app includes source-linked NISR Seasonal Agricultural Survey (SAS) national observations through 2026 Season B, district land-use observations for 2025 Seasons A/B and 2026 Season A, and a searchable browser for all 35 tables in the supplied 2026 Season A workbook.
 
-## Run & operate
+## Run and operate
 
 - `pnpm --filter @workspace/agri-lens-ai run dev` — run the AgriLens web app (`PORT` and `BASE_PATH` are required by Vite).
 - `pnpm --filter @workspace/agri-lens-ai run typecheck` — check the frontend.
 - `PORT=4173 BASE_PATH=/ pnpm --filter @workspace/agri-lens-ai run build` — build the frontend.
-- `node scripts/verify_nisr_data.mjs` — verify data coverage and selected NISR figures.
-- `python3 scripts/import_nisr_sas.py` — re-download the NISR 2025 report and rebuild the 2025 district land-use JSON/CSV (requires Poppler `pdftotext`).
-- `pnpm --filter @workspace/api-server run dev` — run the optional Express API server (port 5000; currently health-check only).
-- `pnpm run typecheck` — full typecheck across workspace packages.
-- `pnpm run build` — workspace build (the frontend Vite config needs `PORT` and `BASE_PATH`).
+- `node scripts/verify_nisr_data.mjs` — verify source data, coverage, workbook tables, and downloads.
+- `python3 scripts/import_nisr_sas.py` — rebuild 2025 district land use from the annual report (requires Poppler `pdftotext`).
+- `python3 scripts/import_nisr_sas_2026a_workbook.py` — rebuild the 35-table dataset and normalized 2026A district data from the checked-in workbook (requires `openpyxl`).
+- `pnpm --filter @workspace/api-server run dev` — run the optional Express API server (health-check only).
+- `pnpm run typecheck` / `pnpm run build` — full workspace checks; frontend Vite needs `PORT` and `BASE_PATH`.
 
 ## Stack
 
-- pnpm workspaces, TypeScript 5.9, React, Vite, Tailwind, Recharts
+- pnpm workspaces, TypeScript 5.9, React, Vite, Tailwind and Recharts
 - Optional API: Express 5
 - Database scaffold: PostgreSQL + Drizzle ORM
-- No runtime AI call is made by the source lookup. The dashboard and comparisons are deterministic lookups and calculations over the checked-in NISR observations.
+- The source lookup is deterministic; the app does not make runtime AI calls.
 
 ## Where things live
 
 - Web app: `artifacts/agri-lens-ai/`
-- NISR national observations and definitions: `artifacts/agri-lens-ai/src/data/national-indicators.json`
-- NISR district observations: `artifacts/agri-lens-ai/src/data/district-land-2025.json`
-- Downloadable district CSV: `artifacts/agri-lens-ai/public/data/district-land-2025.csv`
-- Import and validation scripts: `scripts/import_nisr_sas.py`, `scripts/verify_nisr_data.mjs`
+- National observations, metric definitions and sources: `artifacts/agri-lens-ai/src/data/national-indicators.json`
+- District land use: `artifacts/agri-lens-ai/src/data/district-land-2025.json` and `district-land-2026a.json`
+- All 35 Season A workbook tables: `artifacts/agri-lens-ai/src/data/nisr-sas-2026-season-a-tables.json`
+- Downloadable source workbook: `artifacts/agri-lens-ai/public/data/nisr-sas-2026-season-a-tables.xlsx`
+- District CSVs: `artifacts/agri-lens-ai/public/data/district-land-2025.csv` and `district-land-2026-season-a.csv`
+- Import and validation scripts: `scripts/import_nisr_sas.py`, `scripts/import_nisr_sas_2026a_workbook.py`, `scripts/verify_nisr_data.mjs`
 - Source, methods and limits: `docs/nisr-data.md`
-- Optional API: `artifacts/api-server/`
-- API contract: `lib/api-spec/openapi.yaml`
-- Database schema: `lib/db/src/schema/`
 
 ## Data and product guardrails
 
-- Source: NISR Seasonal Agricultural Survey. Data is linked at the observation/source level; source URLs, periods and definitions are included in the app data.
-- Geographic coverage: national indicator observations cover SAS 2025 Seasons A–C and SAS 2026 Seasons A–B. District land-use tables cover 30 districts for SAS 2025 Seasons A and B, plus NISR’s national total rows.
-- District land area is reported in thousand hectares. NISR dashes are preserved as missing values, not interpreted as zero. Published rounding is retained.
-- The 2025 district extract measures land use, not district-level input adoption, yields or productivity. Do not imply otherwise.
-- Survey-season differences describe the reported estimates; they do not establish cause, statistical significance or annual averages.
-- Area categories are reproduced separately as reported; do not assume they are additive.
-- AgriLens AI is independent and is not an official NISR service. Licensing and reuse terms have not been independently assessed.
-- The interface includes an initial Kinyarwanda translation. Technical statistical language may remain in English pending review.
+- The workbook supplied for this task has 35 worksheets; the worksheets attribute their contents to NISR SAS 2026. The linked NISR Season A release page is cited; a direct NISR URL for this exact workbook and its reuse terms were not confirmed. Consult the source and current NISR terms before redistribution.
+- National indicators cover SAS 2025 Seasons A–C and SAS 2026 Seasons A–B. District land use covers 30 districts for 2025 Seasons A/B and 2026 Season A, with separate national totals.
+- Areas are reported in thousand hectares. Source dashes remain missing values, not zero. The 2025 district figures retain report rounding; 2026 workbook values preserve greater precision. The interactive workbook view rounds long values for legibility; downloads retain full precision.
+- The 2026 workbook also includes district crop-area, yield, production, input-use and agricultural-practice tables. Do not conflate those measures with the separate district land-use comparisons.
+- Survey-season differences do not establish cause, statistical significance or annual averages. Separately reported area categories should not be assumed additive.
+- AgriLens AI is independent and is not an official NISR service. The interface includes an initial Kinyarwanda translation; technical statistical language may remain in English pending review.

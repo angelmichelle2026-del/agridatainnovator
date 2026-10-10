@@ -30,6 +30,7 @@ import {
 import type { Language } from "@/components/app-shell";
 import national from "@/data/national-indicators.json";
 import districtLand from "@/data/district-land-2025.json";
+import districtLand2026a from "@/data/district-land-2026a.json";
 
 type Props = { language: Language };
 type Season = "A" | "B" | "C";
@@ -57,8 +58,20 @@ type DistrictObservation = {
   permanent_pasture_000ha: number | null;
 };
 type MetricDefinition = { label: string; unit: string; category: string };
+type WorkbookTable = {
+  id: string;
+  number: number;
+  title: string;
+  row_count: number;
+  headers: string[];
+  rows: Array<Array<string | number | null>>;
+  source_id: string;
+};
 const observations = national.observations as NationalObservation[];
-const districtRows = districtLand.observations as DistrictObservation[];
+const districtRows = [
+  ...(districtLand.observations as DistrictObservation[]),
+  ...(districtLand2026a.observations as DistrictObservation[]),
+];
 const metricDefinitions = national.metric_definitions as Record<
   string,
   MetricDefinition
@@ -240,6 +253,24 @@ function NativeSelect({
       </select>
     </label>
   );
+}
+
+function compactWorkbookTitle(title: string) {
+  return title
+    .replace(/^Table\s*\d+\s*:\s*/i, "")
+    .replace(/^2026\s*Season\s*A[_\s]*/i, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function displayWorkbookCell(value: string | number | null) {
+  if (value == null) return "—";
+  if (typeof value === "number") {
+    return new Intl.NumberFormat("en", { maximumFractionDigits: 4 }).format(
+      value,
+    );
+  }
+  return value;
 }
 
 export function HomePage({ language }: Props) {
@@ -445,20 +476,62 @@ const DISTRICT_METRICS: Array<{
 
 export function DataPage({ language }: Props) {
   const rw = isRw(language);
-  const [dataset, setDataset] = useState<"national" | "district">("national");
+  const [dataset, setDataset] = useState<"national" | "district" | "workbook">(
+    "national",
+  );
   const [metric, setMetric] = useState("improved_seed_use");
   const [season, setSeason] = useState("ALL");
   const [query, setQuery] = useState("");
+  const [workbookTableId, setWorkbookTableId] = useState("table-06");
+  const [workbookTables, setWorkbookTables] = useState<WorkbookTable[]>([]);
+  const [workbookLoadStatus, setWorkbookLoadStatus] = useState<
+    "idle" | "loading" | "ready" | "error"
+  >("idle");
+  const loadWorkbookTables = () => {
+    if (workbookLoadStatus === "loading" || workbookLoadStatus === "ready")
+      return;
+    setWorkbookLoadStatus("loading");
+    void import("@/data/nisr-sas-2026-season-a-tables.json")
+      .then((module) => {
+        setWorkbookTables(module.default.tables as WorkbookTable[]);
+        setWorkbookLoadStatus("ready");
+      })
+      .catch(() => setWorkbookLoadStatus("error"));
+  };
+  const selectedWorkbookTable =
+    workbookTables.find((table) => table.id === workbookTableId) ??
+    workbookTables[5];
+  const workbookHeaders = (selectedWorkbookTable?.headers ?? []).map(
+    (header, index) =>
+      selectedWorkbookTable.number === 35 &&
+      index === 0 &&
+      header.startsWith("Column ")
+        ? "District"
+        : header,
+  );
+  const filteredWorkbookRows = (selectedWorkbookTable?.rows ?? []).filter(
+    (row) =>
+      !query ||
+      row.some((value) =>
+        String(value ?? "")
+          .toLowerCase()
+          .includes(query.toLowerCase()),
+      ),
+  );
   const availableSeasons =
     dataset === "district"
-      ? ["A", "B"]
-      : [
-          ...new Set(
-            observations
-              .filter((row) => row.metric === metric)
-              .map((row) => row.season),
-          ),
-        ].sort();
+      ? [
+          ...new Set(districtRows.map((row) => `${row.year} · ${row.season}`)),
+        ].sort()
+      : dataset === "workbook"
+        ? []
+        : [
+            ...new Set(
+              observations
+                .filter((row) => row.metric === metric)
+                .map((row) => row.season),
+            ),
+          ].sort();
   const selectedSeason =
     season === "ALL" || availableSeasons.includes(season) ? season : "ALL";
   const filteredNational = observations
@@ -476,11 +549,21 @@ export function DataPage({ language }: Props) {
   const filteredDistrict = districtRows
     .filter(
       (row) =>
-        (selectedSeason === "ALL" || row.season === selectedSeason) &&
+        (selectedSeason === "ALL" ||
+          `${row.year} · ${row.season}` === selectedSeason) &&
         row.district !== "National",
     )
-    .filter((row) => row.district.toLowerCase().includes(query.toLowerCase()))
-    .sort((a, b) => a.district.localeCompare(b.district));
+    .filter((row) =>
+      `${row.district} ${row.year} ${row.season}`
+        .toLowerCase()
+        .includes(query.toLowerCase()),
+    )
+    .sort(
+      (a, b) =>
+        a.year - b.year ||
+        a.season.localeCompare(b.season) ||
+        a.district.localeCompare(b.district),
+    );
   const districtMetric =
     DISTRICT_METRICS.find((item) => item.key === metric) ?? DISTRICT_METRICS[0];
   const exportNational = () =>
@@ -499,7 +582,7 @@ export function DataPage({ language }: Props) {
     );
   const exportDistrict = () =>
     downloadCsv(
-      "nisr-sas-2025-district-land-use.csv",
+      "nisr-sas-district-land-use.csv",
       filteredDistrict.map((row) => ({
         district: row.district,
         year: row.year,
@@ -508,7 +591,22 @@ export function DataPage({ language }: Props) {
         value: row[districtMetric.key],
         unit: districtMetric.unit,
         source_id: row.source_id,
-        source_url: districtLand.source.source_url,
+        source_url: sources.find((source) => source.id === row.source_id)
+          ?.source_url,
+      })),
+    );
+  const exportWorkbook = () =>
+    selectedWorkbookTable &&
+    downloadCsv(
+      `nisr-sas-2026-season-a-table-${String(selectedWorkbookTable.number).padStart(2, "0")}.csv`,
+      filteredWorkbookRows.map((row) => ({
+        ...Object.fromEntries(
+          workbookHeaders.map((header, index) => [header, row[index]]),
+        ),
+        source_id: selectedWorkbookTable.source_id,
+        source_url: sources.find(
+          (source) => source.id === selectedWorkbookTable.source_id,
+        )?.source_url,
       })),
     );
   const nationalMetricOptions = Object.entries(metricDefinitions).map(
@@ -559,7 +657,21 @@ export function DataPage({ language }: Props) {
           }}
           className={`rounded-lg px-4 py-2.5 text-[12px] font-semibold ${dataset === "district" ? "bg-primary text-primary-foreground" : "border border-border bg-card text-muted-foreground"}`}
         >
-          {tx(rw, "District land use · 2025", "Ubutaka mu turere · 2025")}
+          {tx(rw, "District land use · 2025–26", "Ubutaka mu turere · 2025–26")}
+        </button>
+        <button
+          role="tab"
+          aria-selected={dataset === "workbook"}
+          onClick={() => {
+            setDataset("workbook");
+            setWorkbookTableId("table-06");
+            setSeason("ALL");
+            setQuery("");
+            loadWorkbookTables();
+          }}
+          className={`rounded-lg px-4 py-2.5 text-[12px] font-semibold ${dataset === "workbook" ? "bg-primary text-primary-foreground" : "border border-border bg-card text-muted-foreground"}`}
+        >
+          {tx(rw, "All 35 tables · 2026 A", "Imbonerahamwe 35 · 2026 A")}
         </button>
       </div>
       <section
@@ -568,43 +680,76 @@ export function DataPage({ language }: Props) {
       >
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_190px_190px_auto] lg:items-end">
           <NativeSelect
-            label={tx(rw, "Indicator", "Igipimo")}
-            value={metric}
+            label={
+              dataset === "workbook"
+                ? tx(rw, "NISR table", "Imbonerahamwe ya NISR")
+                : tx(rw, "Indicator", "Igipimo")
+            }
+            value={dataset === "workbook" ? workbookTableId : metric}
             onChange={(value) => {
-              setMetric(value);
-              setSeason("ALL");
+              if (dataset === "workbook") {
+                setWorkbookTableId(value);
+                loadWorkbookTables();
+              } else {
+                setMetric(value);
+                setSeason("ALL");
+              }
             }}
             options={
               dataset === "national"
                 ? nationalMetricOptions
-                : districtMetricOptions
+                : dataset === "district"
+                  ? districtMetricOptions
+                  : workbookTables.length
+                    ? workbookTables.map((table) => ({
+                        value: table.id,
+                        label: `${table.number}. ${compactWorkbookTitle(table.title)}`,
+                      }))
+                    : [
+                        {
+                          value: "table-06",
+                          label:
+                            workbookLoadStatus === "error"
+                              ? "Unable to load tables — select to retry"
+                              : "Loading 35 tables…",
+                        },
+                      ]
             }
             testId="select-data-metric"
           />
-          <NativeSelect
-            label={tx(rw, "Time period", "Igihe")}
-            value={selectedSeason}
-            onChange={setSeason}
-            options={[
-              {
-                value: "ALL",
-                label:
-                  dataset === "district"
-                    ? "Both seasons"
-                    : "All available seasons",
-              },
-              ...availableSeasons.map((s) => ({
-                value: s,
-                label: `Season ${s}`,
-              })),
-            ]}
-            testId="select-data-season"
-          />
+          {dataset !== "workbook" && (
+            <NativeSelect
+              label={tx(rw, "Time period", "Igihe")}
+              value={selectedSeason}
+              onChange={setSeason}
+              options={[
+                {
+                  value: "ALL",
+                  label:
+                    dataset === "district"
+                      ? "All available periods"
+                      : "All available seasons",
+                },
+                ...availableSeasons.map((s) => ({
+                  value: s,
+                  label:
+                    dataset === "district"
+                      ? `Season ${s.split(" · ")[1]} · ${s.split(" · ")[0]}`
+                      : `Season ${s}`,
+                })),
+              ]}
+              testId="select-data-season"
+            />
+          )}
           <label className="flex min-w-0 flex-col gap-1.5 text-[10px] font-bold uppercase tracking-[.1em] text-muted-foreground">
             {tx(
               rw,
-              "Search district or year",
-              "Shakisha akarere cyangwa umwaka",
+              dataset === "workbook"
+                ? "Search table rows"
+                : "Search district or year",
+              dataset === "workbook"
+                ? "Shakisha mu mbonerahamwe"
+                : "Shakisha akarere cyangwa umwaka",
             )}
             <span className="relative">
               <Search
@@ -615,7 +760,11 @@ export function DataPage({ language }: Props) {
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder={
-                  dataset === "district" ? "e.g. Nyagatare" : "e.g. 2026"
+                  dataset === "workbook"
+                    ? "e.g. maize or Nyagatare"
+                    : dataset === "district"
+                      ? "e.g. Nyagatare"
+                      : "e.g. 2026"
                 }
                 className="h-10 w-full rounded-lg border border-border bg-background pl-9 pr-3 text-[12px] font-medium normal-case tracking-normal text-foreground"
                 data-testid="input-data-search"
@@ -623,13 +772,29 @@ export function DataPage({ language }: Props) {
             </span>
           </label>
           <button
-            onClick={dataset === "national" ? exportNational : exportDistrict}
+            onClick={
+              dataset === "national"
+                ? exportNational
+                : dataset === "district"
+                  ? exportDistrict
+                  : exportWorkbook
+            }
             className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-border bg-background px-3 text-[11px] font-semibold hover:bg-muted"
             data-testid="button-export-csv"
           >
             <ArrowDownToLine size={14} />
             {tx(rw, "Export CSV", "Kurura CSV")}
           </button>
+          {dataset === "workbook" && (
+            <a
+              href="/data/nisr-sas-2026-season-a-tables.xlsx"
+              download
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-3 text-[11px] font-semibold text-primary-foreground hover:bg-primary/90"
+            >
+              <ArrowDownToLine size={14} />
+              Download full workbook
+            </a>
+          )}
         </div>
         {dataset === "national" ? (
           <div className="mt-5 overflow-x-auto rounded-lg border border-border">
@@ -674,7 +839,7 @@ export function DataPage({ language }: Props) {
               </p>
             )}
           </div>
-        ) : (
+        ) : dataset === "district" ? (
           <div className="mt-5 overflow-x-auto rounded-lg border border-border">
             <table className="w-full min-w-[620px] text-left text-[12px]">
               <thead className="bg-muted/70 text-[10px] uppercase tracking-[.1em] text-muted-foreground">
@@ -689,11 +854,13 @@ export function DataPage({ language }: Props) {
               <tbody>
                 {filteredDistrict.map((row) => (
                   <tr
-                    key={`${row.district}-${row.season}`}
+                    key={`${row.district}-${row.year}-${row.season}`}
                     className="border-t border-border"
                   >
                     <td className="px-4 py-3 font-semibold">{row.district}</td>
-                    <td className="px-4 py-3">2025 · {row.season}</td>
+                    <td className="px-4 py-3">
+                      {row.year} · {row.season}
+                    </td>
                     <td className="px-4 py-3">{districtMetric.label}</td>
                     <td className="px-4 py-3 text-right font-semibold tabular-nums">
                       {displayValue(
@@ -702,15 +869,10 @@ export function DataPage({ language }: Props) {
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      <a
-                        className="font-semibold text-primary hover:underline"
-                        href={districtLand.source.source_url}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        NISR report
-                        <ExternalLink size={12} className="ml-1 inline" />
-                      </a>
+                      <SourceLink
+                        sourceId={row.source_id}
+                        label="NISR source"
+                      />
                     </td>
                   </tr>
                 ))}
@@ -722,19 +884,93 @@ export function DataPage({ language }: Props) {
               </p>
             )}
           </div>
+        ) : (
+          <div className="mt-5 overflow-hidden rounded-lg border border-border">
+            <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border bg-[#f4f2e9] px-4 py-3.5">
+              <div className="min-w-0">
+                <p className="text-[9px] font-bold uppercase tracking-[.13em] text-primary">
+                  {selectedWorkbookTable
+                    ? `TABLE ${selectedWorkbookTable.number} · NISR SAS 2026 SEASON A`
+                    : "NISR SAS 2026 SEASON A TABLES"}
+                </p>
+                <h2 className="mt-1 text-[13px] font-bold leading-5 text-foreground">
+                  {selectedWorkbookTable
+                    ? compactWorkbookTitle(selectedWorkbookTable.title)
+                    : workbookLoadStatus === "error"
+                      ? "Could not load the table data"
+                      : "Loading the 35-table catalogue…"}
+                </h2>
+                <p className="mt-1 text-[10px] text-muted-foreground">
+                  {filteredWorkbookRows.length} of{" "}
+                  {selectedWorkbookTable?.row_count ?? 0} rows · workbook
+                  precision available in the download
+                </p>
+              </div>
+              {selectedWorkbookTable && (
+                <SourceLink
+                  sourceId={selectedWorkbookTable.source_id}
+                  label="NISR release page"
+                />
+              )}
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[760px] text-left text-[11px]">
+                <thead className="bg-muted/70 text-[9px] uppercase tracking-[.08em] text-muted-foreground">
+                  <tr>
+                    {workbookHeaders.map((header, index) => (
+                      <th
+                        key={`${header}-${index}`}
+                        className={`whitespace-nowrap px-3 py-2.5 ${index === 0 ? "sticky left-0 z-[1] min-w-[130px] bg-muted/90" : "text-right"}`}
+                      >
+                        {header}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredWorkbookRows.map((row, rowIndex) => (
+                    <tr
+                      key={`${selectedWorkbookTable.id}-${rowIndex}`}
+                      className="border-t border-border"
+                    >
+                      {workbookHeaders.map((header, cellIndex) => (
+                        <td
+                          key={`${header}-${cellIndex}`}
+                          className={`whitespace-nowrap px-3 py-2.5 tabular-nums ${cellIndex === 0 ? "sticky left-0 z-[1] bg-card font-semibold" : "text-right"}`}
+                        >
+                          {displayWorkbookCell(row[cellIndex])}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {filteredWorkbookRows.length === 0 && (
+                <p className="p-5 text-center text-[12px] text-muted-foreground">
+                  {selectedWorkbookTable
+                    ? "No rows match this search. Try a crop, district or clear your search."
+                    : workbookLoadStatus === "error"
+                      ? "Table data could not be loaded. Select this tab again to retry."
+                      : "Loading the NISR tables. This only happens the first time you open this tab."}
+                </p>
+              )}
+            </div>
+          </div>
         )}
         <p className="mt-3 text-[10px] text-muted-foreground">
           {dataset === "national"
             ? `${filteredNational.length} published rows · national estimates${selectedSeason === "ALL" ? " · all available seasons" : ` · Season ${selectedSeason}`}`
-            : `${filteredDistrict.length} district rows · 2025${selectedSeason === "ALL" ? " · Seasons A and B" : ` · Season ${selectedSeason}`}`}
+            : dataset === "district"
+              ? `${filteredDistrict.length} district rows${selectedSeason === "ALL" ? " · all available periods" : ` · ${selectedSeason}`}`
+              : `${filteredWorkbookRows.length} displayed rows · Table ${selectedWorkbookTable?.number ?? "—"} of 35`}
         </p>
       </section>
       <div className="mt-5">
         <SourceNote>
           {tx(
             rw,
-            "A dash in the NISR district tables is represented as missing (—), not zero. Area measurements in the 2025 district tables are reported in thousand hectares; values retain NISR’s rounding.",
-            "Utwo tudomo muri raporo ya NISR tugaragazwa nk’amakuru adahari (—), si zeru. Ubutaka bwo muri 2025 bupimwa mu bihumbi bya hegitari; imibare yakurikije uko NISR yayegeranyije.",
+            "A dash in the NISR district tables is represented as missing (—), not zero. District land areas use thousand hectares; the 2025 report is rounded, while the supplied 2026 workbook retains greater precision. All 35 workbook tables are available below.",
+            "Utwo tudomo muri raporo ya NISR tugaragazwa nk’amakuru adahari (—), si zeru. Ubutaka bwo muri 2025 na 2026 bupimwa mu bihumbi bya hegitari. Imbonerahamwe 35 ya 2026 iri mu bubiko.",
           )}
         </SourceNote>
       </div>
@@ -995,6 +1231,9 @@ export function DashboardPage({ language }: Props) {
 
 export function ComparePage({ language }: Props) {
   const rw = isRw(language);
+  const availableDistrictPeriods = [
+    ...new Set(districtRows.map((row) => `${row.year} · ${row.season}`)),
+  ].sort();
   const districts = [
     ...new Set(
       districtRows
@@ -1004,13 +1243,14 @@ export function ComparePage({ language }: Props) {
   ].sort();
   const [left, setLeft] = useState("Nyagatare");
   const [right, setRight] = useState("Gisagara");
-  const [season, setSeason] = useState<"A" | "B">("A");
+  const [period, setPeriod] = useState("2025 · A");
   const [metric, setMetric] = useState<string>(String(DISTRICT_METRICS[0].key));
   const selectedMetric =
     DISTRICT_METRICS.find((item) => item.key === metric) ?? DISTRICT_METRICS[0];
   const rowFor = (district: string) =>
     districtRows.find(
-      (row) => row.district === district && row.season === season,
+      (row) =>
+        row.district === district && `${row.year} · ${row.season}` === period,
     );
   const a = rowFor(left);
   const b = rowFor(right);
@@ -1031,8 +1271,8 @@ export function ComparePage({ language }: Props) {
         title={tx(rw, "Compare districts", "Gereranya uturere")}
         description={tx(
           rw,
-          "Choose two districts and a 2025 season to see their reported land use side by side. It’s land only—not input use or crop yields.",
-          "Gereranya imibare y’ubutaka bw’uturere tubiri muri season imwe ya 2025. Iyi mibare ni iy’ikoreshwa ry’ubutaka, si iy’imikoreshereze y’ibikoresho cyangwa umusaruro.",
+          "Choose two districts and a matching survey period to see reported land use side by side. It’s land only—not input use or crop yields.",
+          "Gereranya imibare y’ubutaka bw’uturere tubiri muri season ihwanye. Iyi mibare ni iy’ikoreshwa ry’ubutaka, si iy’imikoreshereze y’ibikoresho cyangwa umusaruro.",
         )}
       />
       <section
@@ -1061,13 +1301,13 @@ export function ComparePage({ language }: Props) {
             testId="select-district-two"
           />
           <NativeSelect
-            label={label(rw, "Season", "Season")}
-            value={season}
-            onChange={(value) => setSeason(value as "A" | "B")}
-            options={[
-              { value: "A", label: "Season A · 2025" },
-              { value: "B", label: "Season B · 2025" },
-            ]}
+            label={label(rw, "Survey period", "Igihe cy’ubushakashatsi")}
+            value={period}
+            onChange={setPeriod}
+            options={availableDistrictPeriods.map((value) => ({
+              value,
+              label: `Season ${value.split(" · ")[1]} · ${value.split(" · ")[0]}`,
+            }))}
             testId="select-compare-season"
           />
           <NativeSelect
@@ -1136,15 +1376,20 @@ export function ComparePage({ language }: Props) {
                 : `${delta > 0 ? "+" : ""}${displayValue(delta, selectedMetric.unit)}`}
             </p>
             <p className="mt-2 text-[11px] leading-[1.7] text-muted-foreground">
-              {seasonName(2025, season)} · {selectedMetric.label}. This is a
-              comparison of reported estimates, not a performance ranking.
+              {period.replace(" · ", " · Season ")} · {selectedMetric.label}.
+              This is a comparison of reported estimates, not a performance
+              ranking.
             </p>
           </div>
         </div>
         <div className="mt-3">
           <SourceLink
-            sourceId="nisr-sas-2025-annual-report"
-            label="Source: NISR SAS 2025, Tables 9–10"
+            sourceId={a?.source_id ?? "nisr-sas-2025-annual-report"}
+            label={
+              period.startsWith("2026")
+                ? "Source: NISR SAS 2026 Season A, Table 9"
+                : "Source: NISR SAS 2025, Tables 9–10"
+            }
           />
         </div>
       </section>
@@ -1435,15 +1680,16 @@ export function AboutPage({ language }: Props) {
           </div>
           <h2 className="display-font mt-4 text-[21px] font-bold tracking-[-.04em]">
             {districtRows.filter((row) => row.district !== "National").length}{" "}
-            district-season land-use rows and {observations.length} national
-            observations.
+            district-season land-use rows, {observations.length} national
+            observations and 35 full Season A tables.
           </h2>
           <p className="mt-3 text-[12px] leading-[1.8] text-muted-foreground">
-            District land-use observations cover Seasons A and B of 2025 (30
-            districts). National input-use and practice indicators cover all
-            three 2025 seasons and Seasons A and B of 2026. National area
-            summaries are included for 2025 A/B and 2026 A/B. The 2026 releases
-            report coverage across all 30 districts.
+            District land-use observations cover Seasons A and B of 2025 plus
+            Season A of 2026 (30 districts each). The supplied 2026 Season A
+            workbook adds all 35 tables, including national and district crop
+            area, production, yield, input-use and farming-practice measures.
+            National input-use and practice indicators cover all three 2025
+            seasons and Seasons A and B of 2026.
           </p>
           <div className="mt-4 rounded-lg bg-[#f4f2e9] px-3.5 py-3 text-[11px] leading-5 text-[#625e4f]">
             <strong>Snapshot checked 10 Oct 2026.</strong> New NISR releases do
@@ -1456,6 +1702,9 @@ export function AboutPage({ language }: Props) {
             </span>
             <span className="rounded-full border border-[#cfdbc5] bg-[#eff3e8] px-2.5 py-1.5 text-[10px] font-semibold text-[#456749]">
               NISR SAS · 2026 A + B
+            </span>
+            <span className="rounded-full border border-[#cfdbc5] bg-[#eff3e8] px-2.5 py-1.5 text-[10px] font-semibold text-[#456749]">
+              Season A · 35 workbook tables
             </span>
           </div>
         </article>
@@ -1480,7 +1729,19 @@ export function AboutPage({ language }: Props) {
                 <h3 className="text-[12px] font-bold">
                   [{i + 1}] {source.title}
                 </h3>
-                <SourceLink sourceId={source.id} label="Open source" />
+                <div className="flex flex-wrap gap-3 text-[10px]">
+                  <SourceLink sourceId={source.id} label="Open source" />
+                  {source.id === "nisr-sas-2026-season-a-workbook" && (
+                    <a
+                      href="/data/nisr-sas-2026-season-a-tables.xlsx"
+                      download
+                      className="font-semibold text-primary hover:underline"
+                    >
+                      Download supplied workbook
+                      <ArrowDownToLine size={12} className="ml-1 inline" />
+                    </a>
+                  )}
+                </div>
               </div>
               <p className="mt-1 text-[10px] text-muted-foreground">
                 {source.publisher} · {source.period}

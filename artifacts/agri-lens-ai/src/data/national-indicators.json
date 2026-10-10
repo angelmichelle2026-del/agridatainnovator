@@ -29,6 +29,17 @@
       "period": "March 2026 to June 2026",
       "source_url": "https://statistics.gov.rw/statistical-publications/agriculture-environment/seasonal-agricultural-survey-season-b-2026",
       "note": "NISR reports collection across all 30 districts, 1,200 segments and 505 large-scale farmers. The published page provides national values used in this prototype."
+    },
+    {
+      "id": "nisr-sas-2026-season-a-workbook",
+      "publisher": "National Institute of Statistics of Rwanda (NISR)",
+      "title": "Seasonal Agricultural Survey — Season A, 2026 detailed tables",
+      "period": "September 2025 to February 2026",
+      "source_url": "https://www.statistics.gov.rw/statistical-publications/agriculture-environment/seasonal-agricultural-survey-season-2026",
+      "tables": [
+        "All 35 supplied workbook tables, including district land use, crop area, production, yield, inputs and agricultural practices"
+      ],
+      "note": "The workbook supplied for this task attributes its worksheets to NISR SAS 2026. The linked NISR page is the Season A release landing page; workbook values are preserved in the app table browser and downloadable file."
     }
   ],
   "metric_definitions": {
