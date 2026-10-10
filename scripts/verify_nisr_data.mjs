@@ -41,6 +41,12 @@ const administrativeAreas = JSON.parse(
     "utf8",
   ),
 );
+const provinceYields2026a = JSON.parse(
+  fs.readFileSync(
+    new URL("artifacts/agri-lens-ai/src/data/province-yields-2026a.json", root),
+    "utf8",
+  ),
+);
 const sas2026aCsv = fs
   .readFileSync(
     new URL(
@@ -135,6 +141,87 @@ const maizeProductionColumn = cropProduction.headers.findIndex((header) =>
 assert.equal(maize2026a[maizeProductionColumn], 488622.343227443);
 assert.equal(cropVisuals2026a.national_production.number, 6);
 assert.equal(cropVisuals2026a.district_production.number, 15);
+assert.deepEqual(provinceYields2026a.source.table_numbers, [12, 13, 15]);
+assert.equal(provinceYields2026a.provinces.length, 5);
+assert.equal(provinceYields2026a.crops.length, 21);
+assert.equal(provinceYields2026a.observations.length, 105);
+const areaTable = sas2026a.tables.find((table) => table.number === 12);
+const yieldTable = sas2026a.tables.find((table) => table.number === 13);
+const productionTable = sas2026a.tables.find((table) => table.number === 15);
+const normalizeCrop = (value) =>
+  String(value)
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+const provinceByName = new Map(
+  administrativeAreas.entities.map((entity) => [entity.name, entity]),
+);
+const sourceRow = (table, district) =>
+  table.rows.find((row) => String(row[0]).trim() === district);
+for (const observation of provinceYields2026a.observations) {
+  const entity = provinceByName.get(observation.province);
+  assert(entity, `Unknown mapped province/city: ${observation.province}`);
+  const cropIndex = (table) =>
+    table.headers.findIndex(
+      (header) => normalizeCrop(header) === normalizeCrop(observation.crop),
+    );
+  const areaIndex = cropIndex(areaTable);
+  const productionIndex = cropIndex(productionTable);
+  const areaRows = entity.districts.map((district) =>
+    sourceRow(areaTable, district),
+  );
+  const productionRows = entity.districts.map((district) =>
+    sourceRow(productionTable, district),
+  );
+  assert(areaIndex >= 0 && productionIndex >= 0);
+  assert(areaRows.every((row) => typeof row?.[areaIndex] === "number"));
+  assert(
+    productionRows.every((row) => typeof row?.[productionIndex] === "number"),
+  );
+  const harvestedArea = areaRows.reduce((sum, row) => sum + row[areaIndex], 0);
+  const productionMt = productionRows.reduce(
+    (sum, row) => sum + row[productionIndex],
+    0,
+  );
+  const expectedYield =
+    harvestedArea > 0 ? (productionMt * 1000) / harvestedArea : null;
+  assert.equal(observation.harvested_area_ha, harvestedArea);
+  assert.equal(observation.production_mt, productionMt);
+  if (expectedYield === null) {
+    assert.equal(observation.yield_kg_ha, null);
+  } else {
+    assert(Math.abs(observation.yield_kg_ha - expectedYield) < 1e-8);
+  }
+}
+for (const benchmark of provinceYields2026a.national_benchmark) {
+  const yieldIndex = yieldTable.headers.findIndex(
+    (header) => normalizeCrop(header) === normalizeCrop(benchmark.crop),
+  );
+  const reportedNational = yieldTable.rows.find(
+    (row) => String(row[0]).trim() === "National",
+  );
+  const regionalRows = provinceYields2026a.observations.filter(
+    (row) => row.crop === benchmark.crop,
+  );
+  assert(yieldIndex >= 0 && reportedNational);
+  assert.equal(benchmark.yield_kg_ha, reportedNational[yieldIndex]);
+  assert.equal(regionalRows.length, 5);
+  assert.equal(
+    regionalRows.reduce((sum, row) => sum + row.harvested_area_ha, 0),
+    benchmark.harvested_area_ha,
+  );
+  assert.equal(
+    regionalRows.reduce((sum, row) => sum + row.production_mt, 0),
+    benchmark.production_mt,
+  );
+}
+const easternMaizeYield = provinceYields2026a.observations.find(
+  (row) => row.province === "Eastern Province" && row.crop === "Maize",
+);
+assert(Math.abs(easternMaizeYield.yield_kg_ha - 2227.6068434432976) < 1e-8);
+const nationalMaizeYield = provinceYields2026a.national_benchmark.find(
+  (row) => row.crop === "Maize",
+);
+assert.equal(nationalMaizeYield.yield_kg_ha, 1.9943650203946784 * 1000);
 const chartMaizeProductionColumn =
   cropVisuals2026a.national_production.headers.findIndex((header) =>
     header.includes("Production (MT) · 2026 A"),
@@ -197,5 +284,5 @@ assert(
   "Source dashes should survive as null, not zero",
 );
 console.info(
-  `NISR data validation passed: ${land.observations.length + land2026a.observations.length} district-season records (including national totals), ${national.observations.length} national indicators, ${sas2026a.tables.length} workbook tables, and ${national.sources.length} cited sources. Administrative mapping: ${administrativeAreas.entities.length} regions, ${mappedDistricts.length} unique districts.`,
+  `NISR data validation passed: ${land.observations.length + land2026a.observations.length} district-season records (including national totals), ${national.observations.length} national indicators, ${sas2026a.tables.length} workbook tables, and ${national.sources.length} cited sources. Administrative mapping: ${administrativeAreas.entities.length} regions, ${mappedDistricts.length} unique districts. Province yields: ${provinceYields2026a.crops.length} crops × ${provinceYields2026a.provinces.length} regions.`,
 );

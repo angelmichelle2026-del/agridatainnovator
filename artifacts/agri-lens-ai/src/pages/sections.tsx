@@ -19,9 +19,11 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   Legend,
   Line,
   LineChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -72,6 +74,32 @@ type AdministrativeEntity = {
   name: string;
   rw_name: string;
   districts: string[];
+};
+type ProvinceYieldObservation = {
+  province: string;
+  crop: string;
+  harvested_area_ha: number;
+  production_mt: number;
+  yield_kg_ha: number | null;
+};
+type ProvinceYieldData = {
+  source: {
+    id: string;
+    source_url: string;
+    period: string;
+    table_numbers: number[];
+    method: string;
+    interpretation_note: string;
+  };
+  crops: string[];
+  provinces: Array<{ name: string; rw_name: string }>;
+  national_benchmark: Array<{
+    crop: string;
+    yield_kg_ha: number;
+    harvested_area_ha: number;
+    production_mt: number;
+  }>;
+  observations: ProvinceYieldObservation[];
 };
 const observations = national.observations as NationalObservation[];
 const districtRows = [
@@ -1732,6 +1760,9 @@ function CropProductionVisuals({
           </article>
         </div>
       )}
+      {(seasonFilter === "ALL" || seasonFilter === "A") && (
+        <ProvinceYieldCharts language={language} />
+      )}
       <p className="mt-3 text-[10px] leading-4 text-muted-foreground">
         {seasonFilter !== "ALL" && seasonFilter !== "A"
           ? "No detailed crop-production values for this selected season are included in the supplied workbook."
@@ -1739,6 +1770,363 @@ function CropProductionVisuals({
             ? `${selectedCrop.crop}: ${formatTonnes(selectedCrop.current)} in 2026 Season A versus ${formatTonnes(selectedCrop.prior)} in 2025 Season A (${percentageChange === null ? "change unavailable" : `${percentageChange >= 0 ? "+" : ""}${percentageChange.toFixed(1)}%`}). This is an arithmetic difference between published estimates, not a test of statistical significance.`
             : "Crop production and district rankings are drawn from the 2026 Season A workbook."}
       </p>
+    </section>
+  );
+}
+
+function ProvinceYieldCharts({ language }: Props) {
+  const rw = isRw(language);
+  const [data, setData] = useState<ProvinceYieldData | null>(null);
+  const [loadError, setLoadError] = useState(false);
+  const [crop, setCrop] = useState("Maize");
+
+  useEffect(() => {
+    let active = true;
+    import("@/data/province-yields-2026a.json")
+      .then((module) => {
+        if (active) setData(module.default as ProvinceYieldData);
+      })
+      .catch(() => {
+        if (active) setLoadError(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const selectedCrop = data?.crops.includes(crop)
+    ? crop
+    : (data?.crops[0] ?? "Maize");
+  const benchmark = data?.national_benchmark.find(
+    (item) => item.crop === selectedCrop,
+  );
+  const yieldRows = (data?.provinces ?? [])
+    .flatMap((province) => {
+      const observation = data?.observations.find(
+        (item) => item.province === province.name && item.crop === selectedCrop,
+      );
+      return observation && typeof observation.yield_kg_ha === "number"
+        ? [
+            {
+              province: province.name,
+              yield_kg_ha: observation.yield_kg_ha,
+            },
+          ]
+        : [];
+    })
+    .sort((a, b) => a.yield_kg_ha - b.yield_kg_ha);
+  const gapRows = yieldRows.map((row) => ({
+    ...row,
+    gap_kg_ha: row.yield_kg_ha - (benchmark?.yield_kg_ha ?? 0),
+  }));
+  const yieldMax =
+    Math.max(
+      1,
+      benchmark?.yield_kg_ha ?? 0,
+      ...yieldRows.map((row) => row.yield_kg_ha),
+    ) * 1.12;
+  const gapExtent =
+    Math.max(100, ...gapRows.map((row) => Math.abs(row.gap_kg_ha))) * 1.15;
+  const compactYield = (value: number) =>
+    value >= 1000
+      ? `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}k`
+      : String(Math.round(value));
+  const compactGap = (value: number) => {
+    const sign = value > 0 ? "+" : value < 0 ? "−" : "";
+    return `${sign}${Math.round(Math.abs(value))}`;
+  };
+  const formatYield = (value: number) =>
+    `${Math.round(value).toLocaleString("en")} kg/ha`;
+  const formatGap = (value: number) =>
+    `${value > 0 ? "+" : value < 0 ? "−" : ""}${Math.abs(Math.round(value)).toLocaleString("en")} kg/ha`;
+
+  return (
+    <section className="mt-8" aria-labelledby="province-yield-heading">
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[.14em] text-primary">
+            {tx(
+              rw,
+              "2026 SEASON A · PROVINCE/CITY YIELD COMPARISON",
+              "IYI MIHIGO A YA 2026 · UMUSARURO MU NTARA N’UMUJYI",
+            )}
+          </p>
+          <h2
+            id="province-yield-heading"
+            className="display-font mt-1 text-[20px] font-bold tracking-[-.035em]"
+          >
+            {tx(
+              rw,
+              "How did crop yields compare by province?",
+              "Umusaruro ku buso ugereranyije mu ntara",
+            )}
+          </h2>
+          <p className="mt-1 max-w-[760px] text-[11px] leading-5 text-muted-foreground">
+            {tx(
+              rw,
+              "Choose a crop to compare reported kilograms per harvested hectare across Rwanda’s provinces and City of Kigali.",
+              "Hitamo igihingwa ugereranye ibiro by’umusaruro kuri hegitari yasaruwe mu ntara z’u Rwanda no mu Mujyi wa Kigali.",
+            )}
+          </p>
+        </div>
+        {data && (
+          <div className="w-full sm:w-[220px]">
+            <NativeSelect
+              label={tx(rw, "Crop", "Igihingwa")}
+              value={selectedCrop}
+              onChange={setCrop}
+              options={data.crops.map((name) => ({
+                value: name,
+                label: `${name.charAt(0).toUpperCase()}${name.slice(1)}`,
+              }))}
+              testId="select-province-yield-crop"
+            />
+          </div>
+        )}
+      </div>
+
+      {loadError ? (
+        <div
+          className="rounded-xl border border-border bg-card p-5 text-[12px] text-muted-foreground"
+          role="alert"
+        >
+          {tx(
+            rw,
+            "Province yield comparisons could not load. Browse the source tables in the data explorer.",
+            "Imibare y’umusaruro mu ntara ntiyashoboye gufunguka. Reba imbonerahamwe mu bubiko bw’amakuru.",
+          )}
+        </div>
+      ) : !data ? (
+        <div
+          className="rounded-xl border border-border bg-card p-5 text-[12px] text-muted-foreground"
+          role="status"
+        >
+          {tx(
+            rw,
+            "Loading the 2026 Season A yield tables…",
+            "Turafungura imibare y’umusaruro ya Season A 2026…",
+          )}
+        </div>
+      ) : (
+        <>
+          <div className="grid gap-4 xl:grid-cols-2">
+            <article className="rounded-xl border border-border bg-card p-4 sm:p-5">
+              <div className="mb-2">
+                <p className="text-[9px] font-bold uppercase tracking-[.13em] text-primary">
+                  {tx(
+                    rw,
+                    "YIELD · KG PER HARVESTED HECTARE",
+                    "UMUSARURO · KG/HA",
+                  )}
+                </p>
+                <h3 className="display-font mt-1 text-[16px] font-bold">
+                  {tx(
+                    rw,
+                    "Yield by province / city",
+                    "Umusaruro mu ntara / mujyi",
+                  )}
+                </h3>
+                <p className="mt-1 text-[10px] text-muted-foreground">
+                  {selectedCrop} · 2026 Season A · dashed line: Rwanda yield
+                </p>
+              </div>
+              {yieldRows.length > 0 && benchmark ? (
+                <div
+                  className="h-[275px] w-full"
+                  role="img"
+                  aria-label={`${selectedCrop} yield by province and City of Kigali in 2026 Season A`}
+                >
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={yieldRows}
+                      layout="vertical"
+                      margin={{ top: 14, right: 16, bottom: 4, left: 2 }}
+                      barCategoryGap={12}
+                    >
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="#e7e4d8"
+                        horizontal={false}
+                      />
+                      <XAxis
+                        type="number"
+                        domain={[0, yieldMax]}
+                        tick={{ fontSize: 9 }}
+                        axisLine={false}
+                        tickLine={false}
+                        tickFormatter={compactYield}
+                      />
+                      <YAxis
+                        type="category"
+                        dataKey="province"
+                        width={118}
+                        tick={{ fontSize: 9 }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <ReferenceLine
+                        x={benchmark.yield_kg_ha}
+                        stroke="#b68b4a"
+                        strokeDasharray="5 4"
+                        strokeWidth={2}
+                      />
+                      <Tooltip
+                        formatter={(value: number) => [
+                          formatYield(value),
+                          tx(rw, "Yield", "Umusaruro"),
+                        ]}
+                        contentStyle={{
+                          borderRadius: 10,
+                          border: "1px solid #dedbcc",
+                          fontSize: 10,
+                        }}
+                      />
+                      <Bar
+                        dataKey="yield_kg_ha"
+                        name={tx(rw, "Yield", "Umusaruro")}
+                        fill="#47764f"
+                        barSize={24}
+                        radius={[0, 3, 3, 0]}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div className="flex h-[275px] items-center justify-center text-center text-[11px] text-muted-foreground">
+                  No reported harvested area is available for this crop in the
+                  snapshot.
+                </div>
+              )}
+              {benchmark && (
+                <p className="mt-1 text-[10px] leading-4 text-muted-foreground">
+                  Rwanda benchmark: {formatYield(benchmark.yield_kg_ha)}.
+                </p>
+              )}
+            </article>
+
+            <article className="rounded-xl border border-border bg-card p-4 sm:p-5">
+              <div className="mb-2">
+                <p className="text-[9px] font-bold uppercase tracking-[.13em] text-primary">
+                  {tx(
+                    rw,
+                    "GAP FROM NATIONAL YIELD · KG/HA",
+                    "ITANDUKANIRO N’IGIPIMO CY’IGIHUGU · KG/HA",
+                  )}
+                </p>
+                <h3 className="display-font mt-1 text-[16px] font-bold">
+                  {tx(
+                    rw,
+                    "Above or below the Rwanda average?",
+                    "Hejuru cyangwa munsi y’ikigereranyo cy’u Rwanda?",
+                  )}
+                </h3>
+                <p className="mt-1 text-[10px] text-muted-foreground">
+                  {selectedCrop} · positive = above the national yield
+                </p>
+              </div>
+              {gapRows.length > 0 ? (
+                <div
+                  className="h-[275px] w-full"
+                  role="img"
+                  aria-label={`${selectedCrop} province yield difference from Rwanda average in kg per hectare`}
+                >
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={gapRows}
+                      layout="vertical"
+                      margin={{ top: 14, right: 16, bottom: 4, left: 2 }}
+                      barCategoryGap={12}
+                    >
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="#e7e4d8"
+                        horizontal={false}
+                      />
+                      <XAxis
+                        type="number"
+                        domain={[-gapExtent, gapExtent]}
+                        tick={{ fontSize: 9 }}
+                        axisLine={false}
+                        tickLine={false}
+                        tickFormatter={compactGap}
+                      />
+                      <YAxis
+                        type="category"
+                        dataKey="province"
+                        width={118}
+                        tick={{ fontSize: 9 }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <ReferenceLine x={0} stroke="#555344" strokeWidth={1.5} />
+                      <Tooltip
+                        formatter={(value: number) => [
+                          formatGap(value),
+                          tx(
+                            rw,
+                            "Difference from Rwanda",
+                            "Itandukaniro n’u Rwanda",
+                          ),
+                        ]}
+                        contentStyle={{
+                          borderRadius: 10,
+                          border: "1px solid #dedbcc",
+                          fontSize: 10,
+                        }}
+                      />
+                      <Bar
+                        dataKey="gap_kg_ha"
+                        name={tx(
+                          rw,
+                          "Difference from Rwanda",
+                          "Itandukaniro n’u Rwanda",
+                        )}
+                        barSize={24}
+                        radius={[0, 3, 3, 0]}
+                      >
+                        {gapRows.map((row) => (
+                          <Cell
+                            key={row.province}
+                            fill={row.gap_kg_ha >= 0 ? "#47764f" : "#b77165"}
+                          />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div className="flex h-[275px] items-center justify-center text-center text-[11px] text-muted-foreground">
+                  No district yield comparisons are available for this crop.
+                </div>
+              )}
+              <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-muted-foreground">
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-sm bg-[#47764f]" /> Above
+                  Rwanda
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-sm bg-[#b77165]" /> Below
+                  Rwanda
+                </span>
+              </div>
+            </article>
+          </div>
+          <SourceNote>
+            {tx(
+              rw,
+              "Province/city yields are derived as the sum of district production divided by the sum of district harvested area (area-weighted). They are not separately published NISR province estimates. The national reference is NISR Table 13. This is a single 2026 Season A snapshot, not a multi-season trend. Missing area is not treated as zero.",
+              "Umusaruro w’intara n’Umujyi wa Kigali ubazwe hateranywa umusaruro w’uturere ugabanyijwe n’ubuso bw’uturere bwasaruwe (hazirikanwa ubunini bw’ubuso). NISR ntiyabitangaje ukwabyo nk’imibare y’intara. Ikigereranyo cy’igihugu gituruka kuri Table 13 ya NISR. Iyi ni ifoto y’igihembwe Season A 2026 gusa, si ihinduka ry’ibihe byinshi. Ahari amakuru y’ubuso abura ntihafatwa nka zeru.",
+            )}
+          </SourceNote>
+          <div className="mt-3">
+            <SourceLink
+              sourceId={data.source.id}
+              label="Source: NISR SAS 2026 Season A, Tables 12, 13 and 15"
+            />
+            <AdministrativeSourceNote rw={rw} />
+          </div>
+        </>
+      )}
     </section>
   );
 }

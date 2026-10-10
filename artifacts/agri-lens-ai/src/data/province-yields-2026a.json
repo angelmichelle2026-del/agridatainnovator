@@ -1,0 +1,920 @@
+{
+  "source": {
+    "id": "nisr-sas-2026-season-a-workbook",
+    "source_url": "https://www.statistics.gov.rw/statistical-publications/agriculture-environment/seasonal-agricultural-survey-season-2026",
+    "period": "2026 Season A",
+    "table_numbers": [12, 13, 15],
+    "method": "Province/city yield is derived per crop as the sum of district production (MT) divided by summed harvested crop area (Ha), multiplied by 1,000 to report kg/ha. This area-weights the district yields.",
+    "interpretation_note": "Province/city values are derived aggregations, not figures separately published by NISR. The national comparison is the Table 13 national yield. This is a single-season snapshot, not a multi-season trend."
+  },
+  "crops": [
+    "Maize",
+    "Sorghum",
+    "Paddy rice",
+    "Wheat",
+    "Other cereals",
+    "Cassava",
+    "Sweet potato",
+    "Irish potato",
+    "Yams & Taro",
+    "Cooking banana",
+    "Dessert banana",
+    "Banana for beer",
+    "Bush bean",
+    "Climbing bean",
+    "Pea",
+    "Groundnuts",
+    "Soybean",
+    "vegetables",
+    "Fruits",
+    "Fodder crops",
+    "Other crops"
+  ],
+  "provinces": [
+    {
+      "name": "City of Kigali",
+      "rw_name": "Umujyi wa Kigali"
+    },
+    {
+      "name": "Eastern Province",
+      "rw_name": "Intara y’Iburasirazuba"
+    },
+    {
+      "name": "Northern Province",
+      "rw_name": "Intara y’Amajyaruguru"
+    },
+    {
+      "name": "Southern Province",
+      "rw_name": "Intara y’Amajyepfo"
+    },
+    {
+      "name": "Western Province",
+      "rw_name": "Intara y’Iburengerazuba"
+    }
+  ],
+  "national_benchmark": [
+    {
+      "crop": "Maize",
+      "yield_kg_ha": 1994.3650203946784,
+      "harvested_area_ha": 245001.46073096804,
+      "production_mt": 488622.343227443
+    },
+    {
+      "crop": "Sorghum",
+      "yield_kg_ha": 1307.193756360261,
+      "harvested_area_ha": 38299.64543963693,
+      "production_mt": 50065.05738950516
+    },
+    {
+      "crop": "Paddy rice",
+      "yield_kg_ha": 4130.713544207586,
+      "harvested_area_ha": 17207.56520945427,
+      "production_mt": 71079.52267352802
+    },
+    {
+      "crop": "Wheat",
+      "yield_kg_ha": 1401.2626579944117,
+      "harvested_area_ha": 2177.0210870585943,
+      "production_mt": 3050.5783549616094
+    },
+    {
+      "crop": "Other cereals",
+      "yield_kg_ha": 599.6998427924442,
+      "harvested_area_ha": 6797.939230384325,
+      "production_mt": 4076.7230877740685
+    },
+    {
+      "crop": "Cassava",
+      "yield_kg_ha": 13671.417377704187,
+      "harvested_area_ha": 41627.69644600433,
+      "production_mt": 569109.6125856986
+    },
+    {
+      "crop": "Sweet potato",
+      "yield_kg_ha": 8822.983312153268,
+      "harvested_area_ha": 76591.7999043362,
+      "production_mt": 675768.1724037407
+    },
+    {
+      "crop": "Irish potato",
+      "yield_kg_ha": 8906.386578787966,
+      "harvested_area_ha": 55192.2526682057,
+      "production_mt": 491563.5384171816
+    },
+    {
+      "crop": "Yams & Taro",
+      "yield_kg_ha": 6407.968740734874,
+      "harvested_area_ha": 9306.818562112465,
+      "production_mt": 59637.80242170776
+    },
+    {
+      "crop": "Cooking banana",
+      "yield_kg_ha": 14769.530306682354,
+      "harvested_area_ha": 41317.784743692515,
+      "production_mt": 610244.2739769444
+    },
+    {
+      "crop": "Dessert banana",
+      "yield_kg_ha": 8127.770301556916,
+      "harvested_area_ha": 15783.304933298472,
+      "production_mt": 128283.07709728004
+    },
+    {
+      "crop": "Banana for beer",
+      "yield_kg_ha": 10792.658801656089,
+      "harvested_area_ha": 54909.17492298672,
+      "production_mt": 592615.9900242466
+    },
+    {
+      "crop": "Bush bean",
+      "yield_kg_ha": 610.1859120735268,
+      "harvested_area_ha": 203713.57099289025,
+      "production_mt": 124303.15111805187
+    },
+    {
+      "crop": "Climbing bean",
+      "yield_kg_ha": 846.783847548537,
+      "harvested_area_ha": 124107.81655313907,
+      "production_mt": 105092.49441171509
+    },
+    {
+      "crop": "Pea",
+      "yield_kg_ha": 616.2767376066863,
+      "harvested_area_ha": 9563.275454575954,
+      "production_mt": 5893.6241979801725
+    },
+    {
+      "crop": "Groundnuts",
+      "yield_kg_ha": 410.5108250799236,
+      "harvested_area_ha": 9248.02229765597,
+      "production_mt": 3796.413263768283
+    },
+    {
+      "crop": "Soybean",
+      "yield_kg_ha": 534.4700448249795,
+      "harvested_area_ha": 28545.50959279509,
+      "production_mt": 15256.719791613072
+    },
+    {
+      "crop": "vegetables",
+      "yield_kg_ha": 7905.288435449901,
+      "harvested_area_ha": 19241.293067934734,
+      "production_mt": 152107.97157304676
+    },
+    {
+      "crop": "Fruits",
+      "yield_kg_ha": 5444.001775030709,
+      "harvested_area_ha": 6760.84150984097,
+      "production_mt": 36806.033180275546
+    },
+    {
+      "crop": "Fodder crops",
+      "yield_kg_ha": 17170.712121448076,
+      "harvested_area_ha": 8497.249588298402,
+      "production_mt": 145903.82650476505
+    },
+    {
+      "crop": "Other crops",
+      "yield_kg_ha": 6555.819581458687,
+      "harvested_area_ha": 10674.437711212478,
+      "production_mt": 69979.68776822781
+    }
+  ],
+  "observations": [
+    {
+      "province": "City of Kigali",
+      "crop": "Maize",
+      "harvested_area_ha": 5231.608386558333,
+      "production_mt": 8036.700669786662,
+      "yield_kg_ha": 1536.1816244571178
+    },
+    {
+      "province": "Eastern Province",
+      "crop": "Maize",
+      "harvested_area_ha": 129527.7942536539,
+      "production_mt": 288537.0008955548,
+      "yield_kg_ha": 2227.606843443297
+    },
+    {
+      "province": "Northern Province",
+      "crop": "Maize",
+      "harvested_area_ha": 33711.41485049385,
+      "production_mt": 62163.315825416124,
+      "yield_kg_ha": 1843.9841846182696
+    },
+    {
+      "province": "Southern Province",
+      "crop": "Maize",
+      "harvested_area_ha": 39841.30109091234,
+      "production_mt": 70759.89734099802,
+      "yield_kg_ha": 1776.0438390185532
+    },
+    {
+      "province": "Western Province",
+      "crop": "Maize",
+      "harvested_area_ha": 36689.342149349584,
+      "production_mt": 59125.428495687396,
+      "yield_kg_ha": 1611.5150894504536
+    },
+    {
+      "province": "City of Kigali",
+      "crop": "Sorghum",
+      "harvested_area_ha": 0.0,
+      "production_mt": 0.0,
+      "yield_kg_ha": null
+    },
+    {
+      "province": "Eastern Province",
+      "crop": "Sorghum",
+      "harvested_area_ha": 32343.750839075452,
+      "production_mt": 41402.27543715983,
+      "yield_kg_ha": 1280.07031847217
+    },
+    {
+      "province": "Northern Province",
+      "crop": "Sorghum",
+      "harvested_area_ha": 3292.4244354216535,
+      "production_mt": 6079.011210503188,
+      "yield_kg_ha": 1846.363167853437
+    },
+    {
+      "province": "Southern Province",
+      "crop": "Sorghum",
+      "harvested_area_ha": 1707.1119122925609,
+      "production_mt": 1578.8940610434142,
+      "yield_kg_ha": 924.8919474312866
+    },
+    {
+      "province": "Western Province",
+      "crop": "Sorghum",
+      "harvested_area_ha": 956.3582528472707,
+      "production_mt": 1004.8766807987233,
+      "yield_kg_ha": 1050.7324821080422
+    },
+    {
+      "province": "City of Kigali",
+      "crop": "Paddy rice",
+      "harvested_area_ha": 422.3417289815843,
+      "production_mt": 1664.073,
+      "yield_kg_ha": 3940.1103083341304
+    },
+    {
+      "province": "Eastern Province",
+      "crop": "Paddy rice",
+      "harvested_area_ha": 9214.219104672804,
+      "production_mt": 38098.25410624601,
+      "yield_kg_ha": 4134.7241338037265
+    },
+    {
+      "province": "Northern Province",
+      "crop": "Paddy rice",
+      "harvested_area_ha": 36.857387006282806,
+      "production_mt": 121.50999999999999,
+      "yield_kg_ha": 3296.7611073266553
+    },
+    {
+      "province": "Southern Province",
+      "crop": "Paddy rice",
+      "harvested_area_ha": 5597.473866839489,
+      "production_mt": 22355.084567282007,
+      "yield_kg_ha": 3993.7809624655547
+    },
+    {
+      "province": "Western Province",
+      "crop": "Paddy rice",
+      "harvested_area_ha": 1936.6731219541102,
+      "production_mt": 8840.601,
+      "yield_kg_ha": 4564.839001369422
+    },
+    {
+      "province": "City of Kigali",
+      "crop": "Wheat",
+      "harvested_area_ha": 0.0,
+      "production_mt": 0.0,
+      "yield_kg_ha": null
+    },
+    {
+      "province": "Eastern Province",
+      "crop": "Wheat",
+      "harvested_area_ha": 89.64721070768951,
+      "production_mt": 89.29689897690864,
+      "yield_kg_ha": 996.0923298336282
+    },
+    {
+      "province": "Northern Province",
+      "crop": "Wheat",
+      "harvested_area_ha": 1644.924217498125,
+      "production_mt": 2504.4419257455966,
+      "yield_kg_ha": 1522.527238096579
+    },
+    {
+      "province": "Southern Province",
+      "crop": "Wheat",
+      "harvested_area_ha": 84.32022068956576,
+      "production_mt": 92.53706768363031,
+      "yield_kg_ha": 1097.4481201171875
+    },
+    {
+      "province": "Western Province",
+      "crop": "Wheat",
+      "harvested_area_ha": 358.12943816321376,
+      "production_mt": 364.30246255547394,
+      "yield_kg_ha": 1017.2368527533525
+    },
+    {
+      "province": "City of Kigali",
+      "crop": "Other cereals",
+      "harvested_area_ha": 0.0,
+      "production_mt": 0.0,
+      "yield_kg_ha": null
+    },
+    {
+      "province": "Eastern Province",
+      "crop": "Other cereals",
+      "harvested_area_ha": 5302.153025705572,
+      "production_mt": 3310.884533060231,
+      "yield_kg_ha": 624.4415272453671
+    },
+    {
+      "province": "Northern Province",
+      "crop": "Other cereals",
+      "harvested_area_ha": 493.8753256825073,
+      "production_mt": 276.868926469175,
+      "yield_kg_ha": 560.6048977777094
+    },
+    {
+      "province": "Southern Province",
+      "crop": "Other cereals",
+      "harvested_area_ha": 1001.9108789962454,
+      "production_mt": 488.9696282446621,
+      "yield_kg_ha": 488.03704849929517
+    },
+    {
+      "province": "Western Province",
+      "crop": "Other cereals",
+      "harvested_area_ha": 0.0,
+      "production_mt": 0.0,
+      "yield_kg_ha": null
+    },
+    {
+      "province": "City of Kigali",
+      "crop": "Cassava",
+      "harvested_area_ha": 1233.4626652768245,
+      "production_mt": 14965.998752976697,
+      "yield_kg_ha": 12133.321238075654
+    },
+    {
+      "province": "Eastern Province",
+      "crop": "Cassava",
+      "harvested_area_ha": 12858.282352083032,
+      "production_mt": 172179.7389850701,
+      "yield_kg_ha": 13390.57070536152
+    },
+    {
+      "province": "Northern Province",
+      "crop": "Cassava",
+      "harvested_area_ha": 2639.900552110108,
+      "production_mt": 33333.9681178703,
+      "yield_kg_ha": 12626.978728886592
+    },
+    {
+      "province": "Southern Province",
+      "crop": "Cassava",
+      "harvested_area_ha": 17881.34966409482,
+      "production_mt": 264098.4042872031,
+      "yield_kg_ha": 14769.489398079624
+    },
+    {
+      "province": "Western Province",
+      "crop": "Cassava",
+      "harvested_area_ha": 7014.70121243955,
+      "production_mt": 84531.50244257845,
+      "yield_kg_ha": 12050.620530019747
+    },
+    {
+      "province": "City of Kigali",
+      "crop": "Sweet potato",
+      "harvested_area_ha": 1737.4590674586916,
+      "production_mt": 13976.230086534066,
+      "yield_kg_ha": 8044.062935523719
+    },
+    {
+      "province": "Eastern Province",
+      "crop": "Sweet potato",
+      "harvested_area_ha": 12682.822726576833,
+      "production_mt": 98479.30505077085,
+      "yield_kg_ha": 7764.778170746456
+    },
+    {
+      "province": "Northern Province",
+      "crop": "Sweet potato",
+      "harvested_area_ha": 21343.157539868924,
+      "production_mt": 204429.81660341116,
+      "yield_kg_ha": 9578.236782516231
+    },
+    {
+      "province": "Southern Province",
+      "crop": "Sweet potato",
+      "harvested_area_ha": 21843.28817898753,
+      "production_mt": 198093.3502972502,
+      "yield_kg_ha": 9068.842963295656
+    },
+    {
+      "province": "Western Province",
+      "crop": "Sweet potato",
+      "harvested_area_ha": 18985.07239144423,
+      "production_mt": 160789.47036577444,
+      "yield_kg_ha": 8469.2576910181
+    },
+    {
+      "province": "City of Kigali",
+      "crop": "Irish potato",
+      "harvested_area_ha": 574.0890058452917,
+      "production_mt": 3166.7158451021237,
+      "yield_kg_ha": 5516.0712239027025
+    },
+    {
+      "province": "Eastern Province",
+      "crop": "Irish potato",
+      "harvested_area_ha": 10894.692724644921,
+      "production_mt": 51374.7651544773,
+      "yield_kg_ha": 4715.577249669674
+    },
+    {
+      "province": "Northern Province",
+      "crop": "Irish potato",
+      "harvested_area_ha": 15895.179068221292,
+      "production_mt": 163315.93162114845,
+      "yield_kg_ha": 10274.55751962308
+    },
+    {
+      "province": "Southern Province",
+      "crop": "Irish potato",
+      "harvested_area_ha": 7805.729331761399,
+      "production_mt": 47568.991665810485,
+      "yield_kg_ha": 6094.112368494889
+    },
+    {
+      "province": "Western Province",
+      "crop": "Irish potato",
+      "harvested_area_ha": 20022.562537732796,
+      "production_mt": 226137.13413064324,
+      "yield_kg_ha": 11294.115511163203
+    },
+    {
+      "province": "City of Kigali",
+      "crop": "Yams & Taro",
+      "harvested_area_ha": 119.37725420341962,
+      "production_mt": 744.6378337214435,
+      "yield_kg_ha": 6237.686054100186
+    },
+    {
+      "province": "Eastern Province",
+      "crop": "Yams & Taro",
+      "harvested_area_ha": 805.9208760738968,
+      "production_mt": 5070.072156326577,
+      "yield_kg_ha": 6291.02968646973
+    },
+    {
+      "province": "Northern Province",
+      "crop": "Yams & Taro",
+      "harvested_area_ha": 1159.2579731205797,
+      "production_mt": 7409.20025293003,
+      "yield_kg_ha": 6391.3299927412845
+    },
+    {
+      "province": "Southern Province",
+      "crop": "Yams & Taro",
+      "harvested_area_ha": 3212.5458422740776,
+      "production_mt": 26032.86601766727,
+      "yield_kg_ha": 8103.50024429201
+    },
+    {
+      "province": "Western Province",
+      "crop": "Yams & Taro",
+      "harvested_area_ha": 4009.7166164404907,
+      "production_mt": 20381.02616106244,
+      "yield_kg_ha": 5082.909370077905
+    },
+    {
+      "province": "City of Kigali",
+      "crop": "Cooking banana",
+      "harvested_area_ha": 1301.7727179809838,
+      "production_mt": 16367.997592460495,
+      "yield_kg_ha": 12573.621621020635
+    },
+    {
+      "province": "Eastern Province",
+      "crop": "Cooking banana",
+      "harvested_area_ha": 25809.058677990586,
+      "production_mt": 427052.7700539471,
+      "yield_kg_ha": 16546.62323729492
+    },
+    {
+      "province": "Northern Province",
+      "crop": "Cooking banana",
+      "harvested_area_ha": 3438.1791424587077,
+      "production_mt": 47367.97740804408,
+      "yield_kg_ha": 13777.05333124973
+    },
+    {
+      "province": "Southern Province",
+      "crop": "Cooking banana",
+      "harvested_area_ha": 6217.844822353648,
+      "production_mt": 67205.95631585653,
+      "yield_kg_ha": 10808.5612034327
+    },
+    {
+      "province": "Western Province",
+      "crop": "Cooking banana",
+      "harvested_area_ha": 4550.929382908589,
+      "production_mt": 52249.572606636204,
+      "yield_kg_ha": 11481.077426264625
+    },
+    {
+      "province": "City of Kigali",
+      "crop": "Dessert banana",
+      "harvested_area_ha": 666.8704861321768,
+      "production_mt": 5740.8870943780075,
+      "yield_kg_ha": 8608.698711011988
+    },
+    {
+      "province": "Eastern Province",
+      "crop": "Dessert banana",
+      "harvested_area_ha": 5882.801815009063,
+      "production_mt": 49925.25716059545,
+      "yield_kg_ha": 8486.646113628858
+    },
+    {
+      "province": "Northern Province",
+      "crop": "Dessert banana",
+      "harvested_area_ha": 2186.2138325794945,
+      "production_mt": 16478.279329079858,
+      "yield_kg_ha": 7537.359376066742
+    },
+    {
+      "province": "Southern Province",
+      "crop": "Dessert banana",
+      "harvested_area_ha": 4553.449140415189,
+      "production_mt": 35403.60317578316,
+      "yield_kg_ha": 7775.1177369151455
+    },
+    {
+      "province": "Western Province",
+      "crop": "Dessert banana",
+      "harvested_area_ha": 2493.9696591625493,
+      "production_mt": 20735.05033744356,
+      "yield_kg_ha": 8314.074816935097
+    },
+    {
+      "province": "City of Kigali",
+      "crop": "Banana for beer",
+      "harvested_area_ha": 1534.8885875107358,
+      "production_mt": 17200.723612196634,
+      "yield_kg_ha": 11206.496518481883
+    },
+    {
+      "province": "Eastern Province",
+      "crop": "Banana for beer",
+      "harvested_area_ha": 15011.37388082505,
+      "production_mt": 167587.15210675026,
+      "yield_kg_ha": 11164.011597953711
+    },
+    {
+      "province": "Northern Province",
+      "crop": "Banana for beer",
+      "harvested_area_ha": 7161.339528784622,
+      "production_mt": 76898.42492414916,
+      "yield_kg_ha": 10737.994563036713
+    },
+    {
+      "province": "Southern Province",
+      "crop": "Banana for beer",
+      "harvested_area_ha": 19587.312827746624,
+      "production_mt": 210326.23471801862,
+      "yield_kg_ha": 10737.881023683794
+    },
+    {
+      "province": "Western Province",
+      "crop": "Banana for beer",
+      "harvested_area_ha": 11614.260098119687,
+      "production_mt": 120603.45466313192,
+      "yield_kg_ha": 10384.08418997412
+    },
+    {
+      "province": "City of Kigali",
+      "crop": "Bush bean",
+      "harvested_area_ha": 9719.328380112072,
+      "production_mt": 5829.441698758212,
+      "yield_kg_ha": 599.7782429788624
+    },
+    {
+      "province": "Eastern Province",
+      "crop": "Bush bean",
+      "harvested_area_ha": 105757.16363403075,
+      "production_mt": 67039.20316274377,
+      "yield_kg_ha": 633.8975144485793
+    },
+    {
+      "province": "Northern Province",
+      "crop": "Bush bean",
+      "harvested_area_ha": 10676.358323862962,
+      "production_mt": 6536.580495002574,
+      "yield_kg_ha": 612.2481371192385
+    },
+    {
+      "province": "Southern Province",
+      "crop": "Bush bean",
+      "harvested_area_ha": 60451.76946605461,
+      "production_mt": 33122.21324219885,
+      "yield_kg_ha": 547.9113934092188
+    },
+    {
+      "province": "Western Province",
+      "crop": "Bush bean",
+      "harvested_area_ha": 17108.95118882987,
+      "production_mt": 11775.712519348472,
+      "yield_kg_ha": 688.277872172353
+    },
+    {
+      "province": "City of Kigali",
+      "crop": "Climbing bean",
+      "harvested_area_ha": 224.50472463000415,
+      "production_mt": 208.1111578426845,
+      "yield_kg_ha": 926.9789675280235
+    },
+    {
+      "province": "Eastern Province",
+      "crop": "Climbing bean",
+      "harvested_area_ha": 7401.444985296839,
+      "production_mt": 6187.8772675667815,
+      "yield_kg_ha": 836.0363793636458
+    },
+    {
+      "province": "Northern Province",
+      "crop": "Climbing bean",
+      "harvested_area_ha": 43353.79088391139,
+      "production_mt": 39555.09256799803,
+      "yield_kg_ha": 912.3790967649139
+    },
+    {
+      "province": "Southern Province",
+      "crop": "Climbing bean",
+      "harvested_area_ha": 30298.30061287203,
+      "production_mt": 20688.076309230884,
+      "yield_kg_ha": 682.8130915184627
+    },
+    {
+      "province": "Western Province",
+      "crop": "Climbing bean",
+      "harvested_area_ha": 42829.77534642881,
+      "production_mt": 38453.33710907672,
+      "yield_kg_ha": 897.8178568074836
+    },
+    {
+      "province": "City of Kigali",
+      "crop": "Pea",
+      "harvested_area_ha": 38.34417896020432,
+      "production_mt": 22.26102952910702,
+      "yield_kg_ha": 580.5582524588865
+    },
+    {
+      "province": "Eastern Province",
+      "crop": "Pea",
+      "harvested_area_ha": 892.248838282145,
+      "production_mt": 479.31832601089326,
+      "yield_kg_ha": 537.2025218141267
+    },
+    {
+      "province": "Northern Province",
+      "crop": "Pea",
+      "harvested_area_ha": 4582.203082527306,
+      "production_mt": 2700.032343865065,
+      "yield_kg_ha": 589.2432734290483
+    },
+    {
+      "province": "Southern Province",
+      "crop": "Pea",
+      "harvested_area_ha": 1977.6990901724794,
+      "production_mt": 1496.2880823159085,
+      "yield_kg_ha": 756.5802551820025
+    },
+    {
+      "province": "Western Province",
+      "crop": "Pea",
+      "harvested_area_ha": 2072.7802646338196,
+      "production_mt": 1195.7244162591985,
+      "yield_kg_ha": 576.8698383812705
+    },
+    {
+      "province": "City of Kigali",
+      "crop": "Groundnuts",
+      "harvested_area_ha": 121.00337414348189,
+      "production_mt": 51.47698431252413,
+      "yield_kg_ha": 425.4177594377194
+    },
+    {
+      "province": "Eastern Province",
+      "crop": "Groundnuts",
+      "harvested_area_ha": 6432.090441368917,
+      "production_mt": 2611.7039425954486,
+      "yield_kg_ha": 406.04278910599544
+    },
+    {
+      "province": "Northern Province",
+      "crop": "Groundnuts",
+      "harvested_area_ha": 247.0312288833752,
+      "production_mt": 136.2255799941901,
+      "yield_kg_ha": 551.4508453443469
+    },
+    {
+      "province": "Southern Province",
+      "crop": "Groundnuts",
+      "harvested_area_ha": 1650.7204883366999,
+      "production_mt": 639.1510066038275,
+      "yield_kg_ha": 387.195173937563
+    },
+    {
+      "province": "Western Province",
+      "crop": "Groundnuts",
+      "harvested_area_ha": 797.1767649234971,
+      "production_mt": 357.8557502622931,
+      "yield_kg_ha": 448.9038893358056
+    },
+    {
+      "province": "City of Kigali",
+      "crop": "Soybean",
+      "harvested_area_ha": 369.62209503769503,
+      "production_mt": 188.8810122059112,
+      "yield_kg_ha": 511.0111509612233
+    },
+    {
+      "province": "Eastern Province",
+      "crop": "Soybean",
+      "harvested_area_ha": 5368.677521145326,
+      "production_mt": 3475.891566540257,
+      "yield_kg_ha": 647.4390672283718
+    },
+    {
+      "province": "Northern Province",
+      "crop": "Soybean",
+      "harvested_area_ha": 1391.9174462893834,
+      "production_mt": 733.5002242593848,
+      "yield_kg_ha": 526.9710687331152
+    },
+    {
+      "province": "Southern Province",
+      "crop": "Soybean",
+      "harvested_area_ha": 15891.017553747863,
+      "production_mt": 7812.351234504899,
+      "yield_kg_ha": 491.62057798258314
+    },
+    {
+      "province": "Western Province",
+      "crop": "Soybean",
+      "harvested_area_ha": 5524.274976574823,
+      "production_mt": 3046.0957541026182,
+      "yield_kg_ha": 551.4019064980121
+    },
+    {
+      "province": "City of Kigali",
+      "crop": "vegetables",
+      "harvested_area_ha": 987.3205302818792,
+      "production_mt": 8413.566118503424,
+      "yield_kg_ha": 8521.615686550504
+    },
+    {
+      "province": "Eastern Province",
+      "crop": "vegetables",
+      "harvested_area_ha": 4435.609612644594,
+      "production_mt": 33306.234663823525,
+      "yield_kg_ha": 7508.829128893001
+    },
+    {
+      "province": "Northern Province",
+      "crop": "vegetables",
+      "harvested_area_ha": 3913.4133155856566,
+      "production_mt": 33205.629556856074,
+      "yield_kg_ha": 8485.081150158741
+    },
+    {
+      "province": "Southern Province",
+      "crop": "vegetables",
+      "harvested_area_ha": 4039.334010682176,
+      "production_mt": 31733.646262235256,
+      "yield_kg_ha": 7856.158014740646
+    },
+    {
+      "province": "Western Province",
+      "crop": "vegetables",
+      "harvested_area_ha": 5865.61559874043,
+      "production_mt": 45448.8949716285,
+      "yield_kg_ha": 7748.358924404815
+    },
+    {
+      "province": "City of Kigali",
+      "crop": "Fruits",
+      "harvested_area_ha": 62.736672022987506,
+      "production_mt": 338.4769746240329,
+      "yield_kg_ha": 5395.201302676857
+    },
+    {
+      "province": "Eastern Province",
+      "crop": "Fruits",
+      "harvested_area_ha": 3735.141588563656,
+      "production_mt": 17253.37695429568,
+      "yield_kg_ha": 4619.202925833514
+    },
+    {
+      "province": "Northern Province",
+      "crop": "Fruits",
+      "harvested_area_ha": 943.6154309332076,
+      "production_mt": 4873.868321851615,
+      "yield_kg_ha": 5165.100275046906
+    },
+    {
+      "province": "Southern Province",
+      "crop": "Fruits",
+      "harvested_area_ha": 781.997616175727,
+      "production_mt": 3749.3692885429114,
+      "yield_kg_ha": 4794.604498769175
+    },
+    {
+      "province": "Western Province",
+      "crop": "Fruits",
+      "harvested_area_ha": 1237.3502021453914,
+      "production_mt": 10590.941640961302,
+      "yield_kg_ha": 8559.372781123806
+    },
+    {
+      "province": "City of Kigali",
+      "crop": "Fodder crops",
+      "harvested_area_ha": 347.8680867157317,
+      "production_mt": 4554.940459200743,
+      "yield_kg_ha": 13093.872744132797
+    },
+    {
+      "province": "Eastern Province",
+      "crop": "Fodder crops",
+      "harvested_area_ha": 3330.6971207934166,
+      "production_mt": 55720.67848854691,
+      "yield_kg_ha": 16729.43424987064
+    },
+    {
+      "province": "Northern Province",
+      "crop": "Fodder crops",
+      "harvested_area_ha": 1459.3036319343732,
+      "production_mt": 22151.743871578932,
+      "yield_kg_ha": 15179.667470720804
+    },
+    {
+      "province": "Southern Province",
+      "crop": "Fodder crops",
+      "harvested_area_ha": 1544.9109024440615,
+      "production_mt": 29653.7059977388,
+      "yield_kg_ha": 19194.444126730155
+    },
+    {
+      "province": "Western Province",
+      "crop": "Fodder crops",
+      "harvested_area_ha": 1814.4698464108196,
+      "production_mt": 33822.757687699675,
+      "yield_kg_ha": 18640.573032725813
+    },
+    {
+      "province": "City of Kigali",
+      "crop": "Other crops",
+      "harvested_area_ha": 131.98187801610516,
+      "production_mt": 1248.7936011866382,
+      "yield_kg_ha": 9461.856581812342
+    },
+    {
+      "province": "Eastern Province",
+      "crop": "Other crops",
+      "harvested_area_ha": 1872.1007818484627,
+      "production_mt": 8973.619518199037,
+      "yield_kg_ha": 4793.3421134190885
+    },
+    {
+      "province": "Northern Province",
+      "crop": "Other crops",
+      "harvested_area_ha": 2575.619486161199,
+      "production_mt": 27900.43874961153,
+      "yield_kg_ha": 10832.515788733763
+    },
+    {
+      "province": "Southern Province",
+      "crop": "Other crops",
+      "harvested_area_ha": 1789.1558914049554,
+      "production_mt": 3518.0807423254996,
+      "yield_kg_ha": 1966.335498894334
+    },
+    {
+      "province": "Western Province",
+      "crop": "Other crops",
+      "harvested_area_ha": 4305.579673781756,
+      "production_mt": 28338.755156905107,
+      "yield_kg_ha": 6581.867554204167
+    }
+  ]
+}

@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 """Import all tables from the supplied NISR SAS 2026 Season A workbook.
 
-Requires openpyxl. The importer retains each worksheet's tabular observations
-and creates a normalized Table 9 district-land-use dataset used by AgriLens.
+Requires openpyxl. The importer retains each worksheet's tabular observations,
+creates normalized Table 9 district land use, and derives area-weighted
+province/city crop yields from Tables 12, 13 and 15.
 """
 from __future__ import annotations
 
 import argparse
 import csv
 import json
+import math
 import re
 from datetime import date, datetime, time
 from pathlib import Path
@@ -22,6 +24,8 @@ TABLES_OUT = ROOT / "artifacts/agri-lens-ai/src/data/nisr-sas-2026-season-a-tabl
 CROP_VIS_OUT = ROOT / "artifacts/agri-lens-ai/src/data/crop-visuals-2026a.json"
 DISTRICT_OUT = ROOT / "artifacts/agri-lens-ai/src/data/district-land-2026a.json"
 DISTRICT_CSV = ROOT / "artifacts/agri-lens-ai/public/data/district-land-2026-season-a.csv"
+ADMIN_AREAS_IN = ROOT / "artifacts/agri-lens-ai/src/data/rwanda-admin-areas.json"
+PROVINCE_YIELD_OUT = ROOT / "artifacts/agri-lens-ai/src/data/province-yields-2026a.json"
 SOURCE_ID = "nisr-sas-2026-season-a-workbook"
 SOURCE_URL = "https://www.statistics.gov.rw/statistical-publications/agriculture-environment/seasonal-agricultural-survey-season-2026"
 
@@ -175,6 +179,166 @@ def district_land_table9(ws) -> dict[str, Any]:
     }
 
 
+def normalized_header(value: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", value.lower())
+
+
+def numeric_value(value: Any) -> bool:
+    return isinstance(value, (int, float)) and math.isfinite(value)
+
+
+def province_yield_data(
+    tables: list[dict[str, Any]], administrative_areas: dict[str, Any]
+) -> dict[str, Any]:
+    by_number = {table["number"]: table for table in tables}
+    harvested_area = by_number[12]
+    district_yield = by_number[13]
+    production = by_number[15]
+    excluded_groups = {
+        "cereals",
+        "tubersandroots",
+        "banana",
+        "legumesandpulses",
+        "bean",
+        "vegetablesandfruits",
+    }
+    crops = [
+        crop
+        for crop in district_yield["headers"][1:]
+        if normalized_header(crop) not in excluded_groups
+    ]
+
+    def header_index(table: dict[str, Any], crop: str) -> int:
+        target = normalized_header(crop)
+        for index, header in enumerate(table["headers"]):
+            if normalized_header(header) == target:
+                return index
+        raise ValueError(f"Table {table['number']} has no column for {crop!r}")
+
+    def rows_by_name(table: dict[str, Any]) -> dict[str, list[Any]]:
+        return {str(row[0]).strip(): row for row in table["rows"]}
+
+    area_rows = rows_by_name(harvested_area)
+    yield_rows = rows_by_name(district_yield)
+    production_rows = rows_by_name(production)
+    entities = administrative_areas["entities"]
+    district_names = [
+        district for entity in entities for district in entity["districts"]
+    ]
+    if len(district_names) != 30 or len(set(district_names)) != 30:
+        raise ValueError("Administrative mapping must contain 30 unique districts")
+
+    observations = []
+    national_benchmark = []
+    for crop in crops:
+        area_index = header_index(harvested_area, crop)
+        yield_index = header_index(district_yield, crop)
+        production_index = header_index(production, crop)
+        grouped = []
+        national_area = 0.0
+        national_production = 0.0
+
+        for entity in entities:
+            area_total = 0.0
+            production_total = 0.0
+            for district in entity["districts"]:
+                area = area_rows[district][area_index]
+                crop_production = production_rows[district][production_index]
+                reported_yield = yield_rows[district][yield_index]
+                if not all(
+                    numeric_value(value)
+                    for value in (area, crop_production, reported_yield)
+                ):
+                    raise ValueError(
+                        f"Missing {crop} area, production or yield for {district}"
+                    )
+                if area < 0 or crop_production < 0:
+                    raise ValueError(f"Negative source value for {crop} in {district}")
+                if area == 0:
+                    if crop_production != 0:
+                        raise ValueError(
+                            f"Positive {crop} production with zero harvested area in {district}"
+                        )
+                else:
+                    calculated_yield = crop_production * 1000 / area
+                    if not math.isclose(
+                        calculated_yield,
+                        reported_yield,
+                        rel_tol=1e-9,
+                        abs_tol=1e-6,
+                    ):
+                        raise ValueError(
+                            f"Table 13 yield mismatch for {crop} in {district}: "
+                            f"{calculated_yield} vs {reported_yield} kg/ha"
+                        )
+                area_total += area
+                production_total += crop_production
+            national_area += area_total
+            national_production += production_total
+            grouped.append(
+                {
+                    "province": entity["name"],
+                    "crop": crop,
+                    "harvested_area_ha": area_total,
+                    "production_mt": production_total,
+                    "yield_kg_ha": (
+                        production_total * 1000 / area_total
+                        if area_total > 0
+                        else None
+                    ),
+                }
+            )
+
+        national_row = yield_rows.get("National")
+        if not national_row or not numeric_value(national_row[yield_index]):
+            raise ValueError(f"Table 13 has no numeric national yield for {crop}")
+        derived_national_yield = (
+            national_production * 1000 / national_area if national_area > 0 else None
+        )
+        if derived_national_yield is None or not math.isclose(
+            derived_national_yield,
+            national_row[yield_index],
+            rel_tol=1e-9,
+            abs_tol=1e-6,
+        ):
+            raise ValueError(f"District-weighted {crop} yield does not match Table 13 national value")
+        observations.extend(grouped)
+        national_benchmark.append(
+            {
+                "crop": crop,
+                "yield_kg_ha": national_row[yield_index],
+                "harvested_area_ha": national_area,
+                "production_mt": national_production,
+            }
+        )
+
+    return {
+        "source": {
+            "id": SOURCE_ID,
+            "source_url": SOURCE_URL,
+            "period": "2026 Season A",
+            "table_numbers": [12, 13, 15],
+            "method": (
+                "Province/city yield is derived per crop as the sum of district "
+                "production (MT) divided by summed harvested crop area (Ha), "
+                "multiplied by 1,000 to report kg/ha. This area-weights the district yields."
+            ),
+            "interpretation_note": (
+                "Province/city values are derived aggregations, not figures "
+                "separately published by NISR. The national comparison is the "
+                "Table 13 national yield. This is a single-season snapshot, not a multi-season trend."
+            ),
+        },
+        "crops": crops,
+        "provinces": [
+            {"name": entity["name"], "rw_name": entity["rw_name"]}
+            for entity in entities
+        ],
+        "national_benchmark": national_benchmark,
+        "observations": observations,
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--workbook", type=Path, default=DEFAULT_WORKBOOK)
@@ -187,6 +351,8 @@ def main() -> None:
         raise ValueError(f"Expected 35 worksheets; found {len(wb.worksheets)}")
 
     tables = workbook_tables(wb)
+    administrative_areas = json.loads(ADMIN_AREAS_IN.read_text(encoding="utf-8"))
+    province_yields = province_yield_data(tables, administrative_areas)
     tables_data = {
         "source": {
             "id": SOURCE_ID,
@@ -215,17 +381,19 @@ def main() -> None:
     TABLES_OUT.parent.mkdir(parents=True, exist_ok=True)
     CROP_VIS_OUT.parent.mkdir(parents=True, exist_ok=True)
     DISTRICT_OUT.parent.mkdir(parents=True, exist_ok=True)
+    PROVINCE_YIELD_OUT.parent.mkdir(parents=True, exist_ok=True)
     DISTRICT_CSV.parent.mkdir(parents=True, exist_ok=True)
     TABLES_OUT.write_text(json.dumps(tables_data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     CROP_VIS_OUT.write_text(json.dumps(crop_visual_data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    PROVINCE_YIELD_OUT.write_text(json.dumps(province_yields, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     DISTRICT_OUT.write_text(json.dumps(district_data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     with DISTRICT_CSV.open("w", encoding="utf-8-sig", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=["district", "year", "season", *DISTRICT_FIELDS, "source_id", "source_url"])
         writer.writeheader()
         for row in district_data["observations"]:
             writer.writerow({**row, "source_url": SOURCE_URL})
-    print(f"Imported {len(tables)} tables and {len(district_data['observations'])} 2026 Season A district land-use rows.")
-    print(f"Tables: {TABLES_OUT}\nCrop charts: {CROP_VIS_OUT}\nDistrict JSON: {DISTRICT_OUT}\nDistrict CSV: {DISTRICT_CSV}")
+    print(f"Imported {len(tables)} tables, {len(district_data['observations'])} 2026 Season A district land-use rows, and {len(province_yields['observations'])} area-weighted province/crop yields.")
+    print(f"Tables: {TABLES_OUT}\nCrop charts: {CROP_VIS_OUT}\nProvince yield charts: {PROVINCE_YIELD_OUT}\nDistrict JSON: {DISTRICT_OUT}\nDistrict CSV: {DISTRICT_CSV}")
 
 
 if __name__ == "__main__":
