@@ -48,8 +48,8 @@ const navigation = [
   {
     href: "/assistant",
     icon: MessageSquareText,
-    en: "Quick answers",
-    rw: "Ibisubizo byihuse",
+    en: "Ask AgriLens",
+    rw: "Baza AgriLens",
   },
   {
     href: "/about",

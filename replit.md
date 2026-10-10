@@ -4,25 +4,26 @@ AgriLens AI is an independent Rwanda agriculture-planning prototype. The app inc
 
 ## Run and operate
 
-- `pnpm --filter @workspace/agri-lens-ai run dev` — run the AgriLens web app (`PORT` and `BASE_PATH` are required by Vite).
+- `pnpm --filter @workspace/agri-lens-ai run dev` — run the AgriLens web app (`PORT` and `BASE_PATH` are required by Vite; `/api` is proxied to `API_SERVER_URL`, default `http://127.0.0.1:3001`).
 - `pnpm --filter @workspace/agri-lens-ai run typecheck` — check the frontend.
 - `PORT=4173 BASE_PATH=/ pnpm --filter @workspace/agri-lens-ai run build` — build the frontend.
 - `node scripts/verify_nisr_data.mjs` — verify source data, coverage, workbook tables, and downloads.
 - `python3 scripts/import_nisr_sas.py` — rebuild 2025 district land use from the annual report (requires Poppler `pdftotext`).
 - `python3 scripts/import_nisr_sas_2026a_workbook.py` — rebuild the 35-table dataset, compact crop and province-yield chart data, and normalized 2026A district extract from the checked-in workbook (requires `openpyxl`).
-- `pnpm --filter @workspace/api-server run dev` — run the optional Express API server (health-check only).
+- After a full build, `PORT=3001 pnpm --filter @workspace/api-server run dev` — run the Express API and serve the built SPA from one origin (`/` and `/assistant` plus `/api/*`). Configure `NVIDIA_API_KEY` as a **server-side secret**; never expose it in Vite variables or client code. `NVIDIA_MODEL` optionally overrides the default `moonshotai/kimi-k3` model. `AGRILENS_DATA_DIR` can override the default NISR data directory. For Vite hot-reload, run the frontend and API separately; Vite proxies `/api` to `API_SERVER_URL`.
 - `pnpm run typecheck` / `pnpm run build` — full workspace checks; frontend Vite needs `PORT` and `BASE_PATH`.
 
 ## Stack
 
 - pnpm workspaces, TypeScript 5.9, React, Vite, Tailwind and Recharts
-- Optional API: Express 5
+- API: Express 5 with a rate-limited, streaming NVIDIA chat route; the NVIDIA credential is read only by the server.
 - Database scaffold: PostgreSQL + Drizzle ORM
-- The source lookup is deterministic; the app does not make runtime AI calls.
+- The chat assistant sends questions and recent conversation turns to NVIDIA. It adds the repository’s checked NISR snapshot as grounding context, retrieves relevant Season A workbook tables, and links supported answers to known NISR sources. Avoid entering confidential farm or personal information; responses are AI-generated and should be checked against the cited source.
 
 ## Where things live
 
 - Web app: `artifacts/agri-lens-ai/`
+- Blank backend environment template (not a credential): `artifacts/api-server/.env.example`
 - National observations, metric definitions and sources: `artifacts/agri-lens-ai/src/data/national-indicators.json`
 - District land use: `artifacts/agri-lens-ai/src/data/district-land-2025.json` and `district-land-2026a.json`
 - All 35 Season A workbook tables: `artifacts/agri-lens-ai/src/data/nisr-sas-2026-season-a-tables.json`

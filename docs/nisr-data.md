@@ -32,6 +32,14 @@
 
 To rebuild the 2026A extract after replacing the source workbook, run `python3 scripts/import_nisr_sas_2026a_workbook.py`. To run all data integrity checks, use `node scripts/verify_nisr_data.mjs`.
 
+## AI assistant data flow
+
+- The chat API reads the checked-in NISR observations, district land records, derived 2026A province yields and workbook tables on the server. For each request it includes the national/district snapshot and uses keyword matching to add up to three relevant full workbook tables to the model context.
+- The server asks NVIDIA's OpenAI-compatible streaming endpoint (`moonshotai/kimi-k3` by default) to answer from that context, admit when data is absent, and cite only known source IDs. The UI turns valid source-ID tags into links. These are AI-generated responses, not official NISR interpretations.
+- Set `NVIDIA_API_KEY` only in the API server's runtime secret manager. The key is never sent to the browser or written into this repository. `NVIDIA_MODEL` can override the default model; `AGRILENS_DATA_DIR` can override the default data path.
+- The API accepts up to 12 recent messages, limits message sizes, and applies a basic in-memory limit of 12 requests per IP per minute. This is a prototype safeguard, not a substitute for durable production rate limiting or user authentication.
+- Chat messages and the public NISR context sent with them are forwarded to NVIDIA to generate a reply. The Express logger does not store message bodies; avoid sending personal or confidential farm information. Review NVIDIA's current data-handling terms before deployment.
+
 ## Definitions and processing
 
 - The 2025 district land-use tables state areas in **thousand hectares**; their published rounding is retained. Source dashes are encoded as `null` in JSON and blank in CSV, never as zero.

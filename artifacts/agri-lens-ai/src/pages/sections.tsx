@@ -1,18 +1,22 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link } from "wouter";
 import {
   Activity,
   ArrowDownToLine,
   ArrowRight,
+  Bot,
   BookOpenCheck,
   CircleAlert,
   ExternalLink,
   GitCompareArrows,
   Leaf,
+  LoaderCircle,
   MapPinned,
   Search,
+  Send,
   ShieldCheck,
   Sprout,
+  UserRound,
   Wheat,
 } from "lucide-react";
 import {
@@ -2479,112 +2483,355 @@ export function InsightsPage({ language }: Props) {
 }
 
 export function AssistantPage({ language }: Props) {
+  type ChatMessage = {
+    id: string;
+    role: "user" | "assistant";
+    content: string;
+  };
   const rw = isRw(language);
-  const [answer, setAnswer] = useState<{
-    text: string;
-    sourceId: string;
-  } | null>(null);
-  const prompts = [
-    {
-      id: "latest-seeds",
-      label: "How common was improved-seed use in the latest season?",
-      metric: "improved_seed_use",
-      year: 2026,
-      season: "B" as Season,
-    },
-    {
-      id: "latest-fertilizer",
-      label: "How many farmers reported using organic fertilizer?",
-      metric: "organic_fertilizer_use",
-      year: 2026,
-      season: "B" as Season,
-    },
-    {
-      id: "latest-land",
-      label: "How much land was reported in agriculture in 2026 Season B?",
-      metric: "agricultural_land",
-      year: 2026,
-      season: "B" as Season,
-    },
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [input, setInput] = useState("");
+  const [isSending, setIsSending] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const suggestedQuestions = [
+    tx(
+      rw,
+      "Compare maize yield across provinces in 2026 Season A.",
+      "Gereranya umusaruro w’ibigori mu ntara muri Season A 2026.",
+    ),
+    tx(
+      rw,
+      "How did improved-seed use change between 2025 B and 2026 B?",
+      "Imikoreshereze y’imbuto z’indobanure yahindutse ite hagati ya 2025 B na 2026 B?",
+    ),
+    tx(
+      rw,
+      "Which district reported the highest maize production in 2026 Season A?",
+      "Ni akahe karere katanze umusaruro w’ibigori mwinshi muri Season A 2026?",
+    ),
   ];
-  function answerPrompt(metric: string, year: number, season: Season) {
-    const row = getObservation(year, season, metric);
-    if (!row) return;
-    const definition = metricDefinitions[metric];
-    setAnswer({
-      text: `NISR reports ${displayValue(row.value, definition.unit)} for ${seasonName(year, season)}. This is a national survey estimate—not a figure for one district.`,
-      sourceId: row.source_id,
-    });
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ block: "end", behavior: "auto" });
+  }, [messages, isSending]);
+
+  async function sendMessage(rawText: string) {
+    const text = rawText.trim();
+    if (!text || isSending) return;
+    const id = Date.now().toString();
+    const assistantId = `assistant-${id}`;
+    const userMessage: ChatMessage = {
+      id: `user-${id}`,
+      role: "user",
+      content: text,
+    };
+    const assistantMessage: ChatMessage = {
+      id: assistantId,
+      role: "assistant",
+      content: "",
+    };
+    const history = messages
+      .slice(-5)
+      .map(({ role, content }) => ({ role, content }));
+    setMessages((current) => [...current, userMessage, assistantMessage]);
+    setInput("");
+    setIsSending(true);
+
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [...history, { role: "user", content: text }],
+        }),
+      });
+      if (!response.ok) {
+        const errorBody = (await response.json().catch(() => null)) as {
+          error?: unknown;
+        } | null;
+        throw new Error(
+          typeof errorBody?.error === "string"
+            ? errorBody.error
+            : "The chat service could not complete that request. Please try again.",
+        );
+      }
+      if (!response.body) {
+        throw new Error("The chat service did not return a readable response.");
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let streamComplete = false;
+      let receivedText = false;
+      const processFrame = (frame: string) => {
+        const data = frame
+          .split(/\r?\n/)
+          .filter((line) => line.startsWith("data:"))
+          .map((line) => line.slice(5).trim())
+          .join("\n");
+        if (!data) return;
+        if (data === "[DONE]") {
+          streamComplete = true;
+          return;
+        }
+        const event = JSON.parse(data) as { text?: unknown; error?: unknown };
+        if (typeof event.error === "string") throw new Error(event.error);
+        if (typeof event.text === "string" && event.text.length > 0) {
+          receivedText = true;
+          setMessages((current) =>
+            current.map((message) =>
+              message.id === assistantId
+                ? { ...message, content: message.content + event.text }
+                : message,
+            ),
+          );
+        }
+      };
+
+      while (!streamComplete) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        while (true) {
+          const boundary = /\r?\n\r?\n/.exec(buffer);
+          if (!boundary || boundary.index === undefined) break;
+          const frame = buffer.slice(0, boundary.index);
+          buffer = buffer.slice(boundary.index + boundary[0].length);
+          processFrame(frame);
+          if (streamComplete) break;
+        }
+      }
+      buffer += decoder.decode();
+      if (buffer.trim()) processFrame(buffer);
+      if (!receivedText) {
+        throw new Error(
+          "No answer came back. Please try asking in a different way.",
+        );
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : "The chat service could not complete that request. Please try again.";
+      setMessages((current) =>
+        current.map((item) =>
+          item.id === assistantId ? { ...item, content: message } : item,
+        ),
+      );
+    } finally {
+      setIsSending(false);
+    }
   }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    void sendMessage(input);
+  }
+
+  function citationsIn(content: string) {
+    return sources.filter((source) => content.includes(`[${source.id}]`));
+  }
+
+  function displayAnswer(content: string) {
+    return content
+      .replace(/\[([a-z0-9-]+)\]/gi, (tag, sourceId: string) =>
+        sources.some((source) => source.id === sourceId) ? "" : tag,
+      )
+      .replace(/[ \t]+\n/g, "\n")
+      .trim();
+  }
+
   return (
     <div className="page-enter">
       <PageHeading
         index="05"
-        eyebrow={tx(rw, "QUICK ANSWERS", "IBAZO RISHINGIYE KU BIMENYETSO")}
-        title={tx(rw, "Quick answers", "Shakisha inkomoko")}
+        eyebrow={tx(
+          rw,
+          "AI CHAT · NISR DATA",
+          "IKIGANIRO CYA AI · AMAKURU YA NISR",
+        )}
+        title={tx(rw, "Ask AgriLens", "Baza AgriLens")}
         description={tx(
           rw,
-          "Choose a common question to get a short answer from this NISR snapshot, with a link to the source. This is not an open-ended AI chat.",
-          "Bona igisubizo gishingiye ku bipimo byemejwe biri muri iyi prototype. Ni ugushakisha amakuru, si umufasha ukoresha AI.",
+          "Ask in plain English or Kinyarwanda about the NISR snapshot. Answers are grounded in available data, and supported replies link back to their sources.",
+          "Baza mu Cyongereza cyangwa Ikinyarwanda ku makuru ya NISR ari muri sisitemu. Ibisubizo bishingira ku makuru ahari kandi biguhuza n’aho yaturutse.",
         )}
       />
       <section
         className="overflow-hidden rounded-2xl border border-border bg-card"
-        data-testid="assistant-source-lookup"
+        data-testid="assistant-chat"
       >
         <div className="flex items-center gap-3 border-b border-border px-5 py-4">
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#244636] text-[#d8e3c6]">
-            <BookOpenCheck size={18} />
+            <Bot size={18} />
           </span>
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[.14em] text-primary">
-              AGRILENS · QUICK ANSWERS
+              AGRILENS · DATA ASSISTANT
             </p>
             <p className="mt-0.5 text-[11px] text-muted-foreground">
-              Every answer below links to its NISR source.
+              {tx(
+                rw,
+                "NISR-backed answers · streaming replies",
+                "Ibisubizo bishingiye kuri NISR · bigaragara ako kanya",
+              )}
             </p>
           </div>
           <span className="ml-auto rounded-full border border-[#cfdbc5] bg-[#eff3e8] px-2.5 py-1 text-[9px] font-bold uppercase tracking-[.1em] text-[#456749]">
-            NISR data
+            {tx(rw, "NISR snapshot", "Amakuru ya NISR")}
           </span>
         </div>
-        <div className="mx-auto max-w-[840px] px-5 py-7 sm:px-8">
-          <h2 className="display-font text-[20px] font-bold tracking-[-.035em]">
-            What would you like to know?
-          </h2>
-          <div className="mt-4 grid gap-2 sm:grid-cols-3">
-            {prompts.map((prompt) => (
-              <button
-                key={prompt.id}
-                onClick={() =>
-                  answerPrompt(prompt.metric, prompt.year, prompt.season)
-                }
-                className="min-h-[76px] rounded-xl border border-border bg-background p-3 text-left text-[11px] font-medium leading-5 hover:border-primary/40 hover:bg-[#f4f5ed]"
-              >
-                {prompt.label}
-                <ArrowRight size={13} className="mt-1 block text-primary" />
-              </button>
-            ))}
-          </div>
-          {answer ? (
-            <div
-              className="mt-5 rounded-xl border border-[#cfdbc5] bg-[#eff3e8] p-4"
-              role="status"
-            >
-              <p className="text-[12px] leading-6 text-[#334c37]">
-                {answer.text}
-              </p>
-              <p className="mt-3 text-[10px]">
-                <SourceLink sourceId={answer.sourceId} />
-              </p>
+
+        <div
+          className="mx-auto flex max-h-[min(68vh,620px)] min-h-[320px] w-full max-w-[900px] flex-col overflow-y-auto px-4 py-5 sm:px-7"
+          role="log"
+          aria-live="polite"
+          aria-label={tx(rw, "Chat conversation", "Ikiganiro")}
+          data-testid="assistant-messages"
+        >
+          {messages.length === 0 ? (
+            <div className="my-auto py-5">
+              <div className="mx-auto max-w-[600px] text-center">
+                <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eff3e8] text-primary">
+                  <BookOpenCheck size={21} />
+                </span>
+                <h2 className="display-font mt-4 text-[20px] font-bold tracking-[-.035em]">
+                  {tx(
+                    rw,
+                    "What would you like to know?",
+                    "Ni iki wifuza kumenya?",
+                  )}
+                </h2>
+                <p className="mt-2 text-[11px] leading-5 text-muted-foreground">
+                  {tx(
+                    rw,
+                    "Ask about national indicators, district land, crop production or 2026A province yields. If the snapshot does not contain the answer, the assistant will say so.",
+                    "Baza ku bipimo by’igihugu, ubutaka mu karere, umusaruro w’ibihingwa cyangwa umusaruro mu ntara muri 2026A. Niba igisubizo kitari muri iyi sisitemu, umufasha azabikubwira.",
+                  )}
+                </p>
+              </div>
+              <div className="mt-5 grid gap-2 sm:grid-cols-3">
+                {suggestedQuestions.map((question) => (
+                  <button
+                    key={question}
+                    type="button"
+                    onClick={() => void sendMessage(question)}
+                    disabled={isSending}
+                    className="min-h-[76px] rounded-xl border border-border bg-background p-3 text-left text-[11px] font-medium leading-5 transition-colors hover:border-primary/40 hover:bg-[#f4f5ed] disabled:opacity-50"
+                    data-testid="assistant-suggestion"
+                  >
+                    {question}
+                    <ArrowRight size={13} className="mt-1 block text-primary" />
+                  </button>
+                ))}
+              </div>
             </div>
-          ) : null}
+          ) : (
+            <div className="space-y-4">
+              {messages.map((message) => {
+                const citedSources = citationsIn(message.content);
+                return (
+                  <div
+                    key={message.id}
+                    className={`flex gap-2.5 ${message.role === "user" ? "justify-end" : "justify-start"}`}
+                  >
+                    {message.role === "assistant" && (
+                      <span className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#eff3e8] text-primary">
+                        <Bot size={14} />
+                      </span>
+                    )}
+                    <div
+                      className={`max-w-[88%] rounded-2xl px-4 py-3 sm:max-w-[82%] ${message.role === "user" ? "bg-[#244636] text-white" : "border border-border bg-background text-foreground"}`}
+                    >
+                      <p className="whitespace-pre-wrap text-[12px] leading-[1.75]">
+                        {displayAnswer(message.content) ||
+                          (isSending && message.role === "assistant" ? (
+                            <span className="inline-flex items-center gap-2 text-muted-foreground">
+                              <LoaderCircle
+                                size={13}
+                                className="animate-spin"
+                              />
+                              {tx(
+                                rw,
+                                "Looking through the NISR data…",
+                                "Turareba mu makuru ya NISR…",
+                              )}
+                            </span>
+                          ) : null)}
+                      </p>
+                      {citedSources.length > 0 && (
+                        <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 border-t border-border/70 pt-2 text-[10px]">
+                          {citedSources.map((source) => (
+                            <SourceLink
+                              key={source.id}
+                              sourceId={source.id}
+                              label={source.title}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    {message.role === "user" && (
+                      <span className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#e7e1d1] text-[#615b4e]">
+                        <UserRound size={14} />
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          <div ref={chatEndRef} />
         </div>
+
+        <form
+          onSubmit={handleSubmit}
+          className="mx-auto flex w-full max-w-[900px] items-end gap-2 border-t border-border px-4 py-4 sm:px-7"
+          data-testid="assistant-chat-form"
+        >
+          <textarea
+            value={input}
+            onChange={(event) => setInput(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                void sendMessage(input);
+              }
+            }}
+            maxLength={2000}
+            rows={2}
+            placeholder={tx(
+              rw,
+              "Ask about the NISR data… (Enter to send)",
+              "Baza ku makuru ya NISR… (Kanda Enter wohereze)",
+            )}
+            aria-label={tx(rw, "Your message", "Ubutumwa bwawe")}
+            className="min-h-[48px] max-h-[140px] flex-1 resize-y rounded-xl border border-border bg-background px-3.5 py-3 text-[12px] leading-5 outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-primary/10"
+            data-testid="assistant-input"
+          />
+          <button
+            type="submit"
+            disabled={isSending || !input.trim()}
+            aria-label={tx(rw, "Send message", "Ohereza ubutumwa")}
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#244636] text-white transition hover:bg-[#315f47] disabled:cursor-not-allowed disabled:opacity-45"
+            data-testid="assistant-send"
+          >
+            {isSending ? (
+              <LoaderCircle size={17} className="animate-spin" />
+            ) : (
+              <Send size={16} />
+            )}
+          </button>
+        </form>
       </section>
       <div className="mt-5">
         <SourceNote>
-          Need a broader interpretation? Open the NISR report and check the
-          indicator definition before drawing a conclusion.
+          {tx(
+            rw,
+            "Your question, recent chat messages and relevant public NISR context are sent to NVIDIA to generate a reply. Do not include personal or confidential farm information. AI answers can be wrong; check the linked NISR source before making decisions.",
+            "Ikibazo cyawe, ubutumwa buheruka n’amakuru ya NISR bijyanye n’ikibazo byoherezwa kuri NVIDIA kugira ngo ibone igisubizo. Ntushyiremo amakuru y’ibanga cyangwa ajyanye n’umuntu ku giti cye. Ibisubizo bya AI bishobora kwibeshya; banza urebe inkomoko ya NISR mbere yo gufata icyemezo.",
+          )}
         </SourceNote>
       </div>
     </div>
