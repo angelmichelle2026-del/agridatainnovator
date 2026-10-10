@@ -984,6 +984,9 @@ export function DataPage({ language }: Props) {
 
 export function DashboardPage({ language }: Props) {
   const rw = isRw(language);
+  const [seasonFilter, setSeasonFilter] = useState<"ALL" | Season>("ALL");
+  const selectedSeason: Season = seasonFilter === "ALL" ? "B" : seasonFilter;
+  const cardYear = selectedSeason === "C" ? 2025 : 2026;
   // Explicit order avoids accidentally sorting agricultural seasons alphabetically.
   const trendRows = [
     ["2025 A", 2025, "A"],
@@ -992,7 +995,10 @@ export function DashboardPage({ language }: Props) {
     ["2026 A", 2026, "A"],
     ["2026 B", 2026, "B"],
   ].map(([period, year, season]) => {
-    const row: Record<string, string | number> = { period: String(period) };
+    const row: Record<string, string | number> = {
+      period: String(period),
+      season: String(season),
+    };
     for (const metric of [
       "improved_seed_use",
       "organic_fertilizer_use",
@@ -1008,6 +1014,9 @@ export function DashboardPage({ language }: Props) {
     }
     return row;
   });
+  const filteredTrendRows = trendRows.filter(
+    (row) => seasonFilter === "ALL" || row.season === seasonFilter,
+  );
   const areaRows = [
     ["2025 A", 2025, "A"],
     ["2025 B", 2025, "B"],
@@ -1015,6 +1024,7 @@ export function DashboardPage({ language }: Props) {
     ["2026 B", 2026, "B"],
   ].map(([period, year, season]) => ({
     period: String(period),
+    season: String(season),
     agriculture: getObservation(
       Number(year),
       String(season) as Season,
@@ -1026,7 +1036,10 @@ export function DashboardPage({ language }: Props) {
       "seasonal_crop_area",
     )?.value,
   }));
-  const latest = getObservation(2026, "B", "improved_seed_use")!;
+  const filteredAreaRows = areaRows.filter(
+    (row) => seasonFilter === "ALL" || row.season === seasonFilter,
+  );
+  const latest = getObservation(cardYear, selectedSeason, "improved_seed_use")!;
   const latestCards = [
     "improved_seed_use",
     "organic_fertilizer_use",
@@ -1034,8 +1047,8 @@ export function DashboardPage({ language }: Props) {
     "pesticide_use",
   ].map((metric) => ({
     metric,
-    value: getObservation(2026, "B", metric)!,
-    prior: getObservation(2025, "B", metric)!,
+    value: getObservation(cardYear, selectedSeason, metric)!,
+    prior: getObservation(cardYear - 1, selectedSeason, metric),
   }));
   return (
     <div className="page-enter">
@@ -1045,22 +1058,54 @@ export function DashboardPage({ language }: Props) {
         title={tx(rw, "Seasonal picture", "Ishusho y’ibihe")}
         description={tx(
           rw,
-          "Read the latest published season, view how reported farmer practices differ by season, and inspect national land-use estimates.",
-          "Reba imibare iheruka, uko ibikorwa by’abahinzi bihinduka kuri buri season, n’imikoreshereze y’ubutaka ku rwego rw’igihugu.",
+          "Choose a survey season to filter matching farmer-practice and land-use estimates, then explore detailed crop output where tables are available.",
+          "Hitamo igihe cy’ubushakashatsi kugira ngo urebe imibare ihwanye y’ibikorwa by’abahinzi n’imikoreshereze y’ubutaka, unarebe umusaruro w’ibihingwa aho imbonerahamwe ziboneka.",
         )}
       />
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[#cfdbc5] bg-[#eff3e8] px-4 py-3">
         <span className="text-[11px] font-semibold text-[#38563c]">
           {tx(
             rw,
-            "Latest NISR season in this snapshot",
-            "Imibare iheruka gutangazwa",
+            seasonFilter === "ALL"
+              ? "Latest NISR season in this snapshot"
+              : "Most recent data for the selected season",
+            seasonFilter === "ALL"
+              ? "Imibare iheruka gutangazwa"
+              : "Imibare iheruka y’igihe wahisemo",
           )}
-          : 2026 · Season B
+          : {cardYear} · Season {selectedSeason}
         </span>
         <span className="text-[10px] text-[#59705a]">
-          March–June 2026 · all 30 districts surveyed
+          {seasonFilter === "ALL" || selectedSeason === "B"
+            ? "March–June 2026 · all 30 districts surveyed"
+            : selectedSeason === "A"
+              ? "September 2025–February 2026 · Season A"
+              : "2026 Season C is not included in this snapshot"}
         </span>
+      </div>
+      <div className="mb-4 grid gap-3 rounded-xl border border-border bg-card px-4 py-3 sm:grid-cols-[minmax(0,1fr)_220px] sm:items-center">
+        <p className="text-[11px] leading-5 text-muted-foreground">
+          {tx(
+            rw,
+            "Choose a survey season to filter the cards and charts. Detailed crop-production tables are available for Season A only.",
+            "Hitamo igihe cy’ubushakashatsi kugira ngo uhindure imibare n’amashusho. Imbonerahamwe irambuye y’umusaruro iraboneka kuri Season A gusa.",
+          )}
+        </p>
+        <NativeSelect
+          label={tx(rw, "Filter by season", "Shungura hakurikijwe igihe")}
+          value={seasonFilter}
+          onChange={(value) => setSeasonFilter(value as "ALL" | Season)}
+          options={[
+            {
+              value: "ALL",
+              label: tx(rw, "All available seasons", "Ibihe byose bihari"),
+            },
+            { value: "A", label: "Season A" },
+            { value: "B", label: "Season B" },
+            { value: "C", label: "Season C" },
+          ]}
+          testId="select-dashboard-season"
+        />
       </div>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {latestCards.map(({ metric, value, prior }, index) => (
@@ -1068,7 +1113,7 @@ export function DashboardPage({ language }: Props) {
             key={metric}
             label={metricDefinitions[metric].label}
             value={displayValue(value.value, metricDefinitions[metric].unit)}
-            note={`${seasonName(latest.year, latest.season)} · ${compareSeasonNote(value.value, prior.value, metricDefinitions[metric].unit)}`}
+            note={`${seasonName(value.year, value.season)} · ${prior ? compareSeasonNote(value.value, prior.value, metricDefinitions[metric].unit) : "No matched earlier season is included in this snapshot"}`}
             icon={[Sprout, Leaf, Wheat, Activity][index]}
           />
         ))}
@@ -1086,7 +1131,7 @@ export function DashboardPage({ language }: Props) {
           <div className="h-[280px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
-                data={trendRows}
+                data={filteredTrendRows}
                 margin={{ top: 10, right: 8, bottom: 4, left: -14 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#e7e4d8" />
@@ -1148,9 +1193,11 @@ export function DashboardPage({ language }: Props) {
             </ResponsiveContainer>
           </div>
           <p className="mt-2 text-[10px] leading-4 text-muted-foreground">
-            2025 values: NISR SAS annual report summary. 2026 values: NISR
-            season release pages. {latest.year} Season B: {latest.value}% used
-            improved seeds.
+            {seasonFilter === "ALL"
+              ? `2025 values: NISR SAS annual report summary. 2026 values: NISR season release pages. Latest snapshot: ${latest.year} Season ${latest.season}, ${latest.value}% used improved seeds.`
+              : selectedSeason === "C"
+                ? "Only 2025 Season C figures are included in this snapshot; 2026 Season C is not available here."
+                : `Showing matched Season ${selectedSeason} observations for 2025 and 2026. ${latest.year} Season ${latest.season}: ${latest.value}% used improved seeds.`}
           </p>
         </article>
         <article className="rounded-xl border border-border bg-card p-4 sm:p-5">
@@ -1162,10 +1209,10 @@ export function DashboardPage({ language }: Props) {
               How much land was reported in agriculture?
             </h2>
           </div>
-          <div className="h-[280px] w-full">
+          <div className="relative h-[280px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
-                data={areaRows}
+                data={filteredAreaRows}
                 margin={{ top: 10, right: 5, bottom: 4, left: -14 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#e7e4d8" />
@@ -1205,6 +1252,12 @@ export function DashboardPage({ language }: Props) {
                 />
               </BarChart>
             </ResponsiveContainer>
+            {!filteredAreaRows.length && (
+              <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-background/90 px-6 text-center text-[11px] text-muted-foreground">
+                No land-use estimates for Season C are included in this
+                snapshot.
+              </div>
+            )}
           </div>
           <p className="mt-2 text-[10px] leading-4 text-muted-foreground">
             Use each area series as separately published. NISR area categories
@@ -1212,7 +1265,7 @@ export function DashboardPage({ language }: Props) {
           </p>
         </article>
       </section>
-      <CropProductionVisuals />
+      <CropProductionVisuals seasonFilter={seasonFilter} />
       <div className="mt-5 grid gap-4 md:grid-cols-[1fr_auto] md:items-center">
         <SourceNote>
           {tx(
@@ -1234,7 +1287,11 @@ export function DashboardPage({ language }: Props) {
   );
 }
 
-function CropProductionVisuals() {
+function CropProductionVisuals({
+  seasonFilter,
+}: {
+  seasonFilter: "ALL" | Season;
+}) {
   const [tables, setTables] = useState<{
     national_production: WorkbookTable;
     district_production: WorkbookTable;
@@ -1243,7 +1300,9 @@ function CropProductionVisuals() {
   const [crop, setCrop] = useState("Maize");
 
   useEffect(() => {
+    if (seasonFilter !== "ALL" && seasonFilter !== "A") return;
     let active = true;
+    setLoadError(false);
     import("@/data/crop-visuals-2026a.json")
       .then((module) => {
         if (active) {
@@ -1261,7 +1320,7 @@ function CropProductionVisuals() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [seasonFilter]);
 
   const summaryRows = new Set([
     "cereals",
@@ -1375,7 +1434,13 @@ function CropProductionVisuals() {
         </Link>
       </div>
 
-      {loadError ? (
+      {seasonFilter !== "ALL" && seasonFilter !== "A" ? (
+        <div className="rounded-xl border border-border bg-card p-5 text-[12px] leading-5 text-muted-foreground">
+          Detailed crop-production tables in the supplied workbook cover Season
+          A only. Choose Season A or all available seasons to view the crop
+          charts; this avoids showing Season A results under another season.
+        </div>
+      ) : loadError ? (
         <div className="rounded-xl border border-border bg-card p-5 text-[12px] text-muted-foreground">
           Crop charts could not load. Open the data explorer to browse the
           source tables.
@@ -1561,9 +1626,11 @@ function CropProductionVisuals() {
         </div>
       )}
       <p className="mt-3 text-[10px] leading-4 text-muted-foreground">
-        {selectedCrop
-          ? `${selectedCrop.crop}: ${formatTonnes(selectedCrop.current)} in 2026 Season A versus ${formatTonnes(selectedCrop.prior)} in 2025 Season A (${percentageChange === null ? "change unavailable" : `${percentageChange >= 0 ? "+" : ""}${percentageChange.toFixed(1)}%`}). This is an arithmetic difference between published estimates, not a test of statistical significance.`
-          : "Crop production and district rankings are drawn from the 2026 Season A workbook."}
+        {seasonFilter !== "ALL" && seasonFilter !== "A"
+          ? "No detailed crop-production values for this selected season are included in the supplied workbook."
+          : selectedCrop
+            ? `${selectedCrop.crop}: ${formatTonnes(selectedCrop.current)} in 2026 Season A versus ${formatTonnes(selectedCrop.prior)} in 2025 Season A (${percentageChange === null ? "change unavailable" : `${percentageChange >= 0 ? "+" : ""}${percentageChange.toFixed(1)}%`}). This is an arithmetic difference between published estimates, not a test of statistical significance.`
+            : "Crop production and district rankings are drawn from the 2026 Season A workbook."}
       </p>
     </section>
   );
