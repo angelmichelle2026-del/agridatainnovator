@@ -2500,7 +2500,14 @@ export function AssistantPage({ language }: Props) {
     id: string;
     role: "user" | "assistant";
     content: string;
-    status?: "searching" | "retrieving" | "calculating" | "answering";
+    status?:
+      | "searching"
+      | "retrieving"
+      | "calculating"
+      | "analyzing"
+      | "reviewing"
+      | "revising"
+      | "answering";
   };
   type CatalogResult = {
     id: string;
@@ -2664,6 +2671,9 @@ export function AssistantPage({ language }: Props) {
           event.status === "searching" ||
           event.status === "retrieving" ||
           event.status === "calculating" ||
+          event.status === "analyzing" ||
+          event.status === "reviewing" ||
+          event.status === "revising" ||
           event.status === "answering"
         ) {
           setMessages((current) =>
@@ -2757,6 +2767,27 @@ export function AssistantPage({ language }: Props) {
         rw,
         "Preparing a sourced answer…",
         "Turimo gutegura igisubizo gifite inkomoko…",
+      );
+    }
+    if (status === "analyzing") {
+      return tx(
+        rw,
+        "Comparing the evidence and calculating…",
+        "Turimo kugereranya ibimenyetso no kubara…",
+      );
+    }
+    if (status === "reviewing") {
+      return tx(
+        rw,
+        "Checking the draft against NISR sources…",
+        "Turimo kugenzura igisubizo duhereye ku masoko ya NISR…",
+      );
+    }
+    if (status === "revising") {
+      return tx(
+        rw,
+        "Tightening the answer to match the evidence…",
+        "Turimo kunoza igisubizo kugira ngo gihuze n’ibimenyetso…",
       );
     }
     return tx(

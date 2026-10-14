@@ -297,7 +297,8 @@ test("data access rejects ambiguous measures and unregistered tools instead of e
 
 test("mocked NVIDIA integration performs bounded tool calls and streams only the sourced answer", async (t) => {
   const providerRequests = [];
-  let nonStreamRequest = 0;
+  let plannerRequests = 0;
+  let analystRequests = 0;
   const provider = createServer(async (req, res) => {
     const chunks = [];
     for await (const chunk of req) chunks.push(chunk);
@@ -306,10 +307,10 @@ test("mocked NVIDIA integration performs bounded tool calls and streams only the
       payload,
       authorization: req.headers.authorization,
     });
-    if (!payload.stream) {
-      nonStreamRequest += 1;
+    if (payload.model === "mock-glm-model" && !payload.stream) {
+      plannerRequests += 1;
       res.writeHead(200, { "Content-Type": "application/json" });
-      if (nonStreamRequest === 1) {
+      if (plannerRequests === 1) {
         res.end(
           JSON.stringify({
             choices: [
@@ -349,17 +350,43 @@ test("mocked NVIDIA integration performs bounded tool calls and streams only the
       }
       return;
     }
-    res.writeHead(200, {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-    });
-    res.write(
-      `data: ${JSON.stringify({ choices: [{ delta: { content: "Nyagatare leads the district ranking. " } }] })}\n\n`,
-    );
-    await delay(5);
-    res.end(
-      `data: ${JSON.stringify({ choices: [{ delta: { content: "[nisr-sas-2026-season-a-workbook]" } }] })}\n\n\ndata: [DONE]\n\n`,
-    );
+    if (payload.model === "mock-muse-model" && !payload.stream) {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify({
+          choices: [
+            {
+              message: {
+                role: "assistant",
+                content: "REVISE: State the period as 2026 Season A.",
+              },
+            },
+          ],
+        }),
+      );
+      return;
+    }
+    if (payload.model === "mock-nemotron-model" && payload.stream) {
+      analystRequests += 1;
+      res.writeHead(200, {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+      });
+      const text =
+        analystRequests === 1
+          ? "Nyagatare leads the district ranking. "
+          : "For 2026 Season A, Nyagatare leads the district production ranking. ";
+      res.write(
+        `data: ${JSON.stringify({ choices: [{ delta: { reasoning_content: "private model reasoning", content: text } }] })}\n\n`,
+      );
+      await delay(5);
+      res.end(
+        `data: ${JSON.stringify({ choices: [{ delta: { content: "[nisr-sas-2026-season-a-workbook]" } }] })}\n\n\ndata: [DONE]\n\n`,
+      );
+      return;
+    }
+    res.writeHead(400, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: "Unexpected mock model request" }));
   });
   provider.listen(0, "127.0.0.1");
   await once(provider, "listening");
@@ -376,7 +403,9 @@ test("mocked NVIDIA integration performs bounded tool calls and streams only the
         ...process.env,
         PORT: String(port),
         NVIDIA_API_KEY: "eval-only-not-a-real-key",
-        NVIDIA_MODEL: "mock-model",
+        NVIDIA_GLM_MODEL: "mock-glm-model",
+        NVIDIA_NEMOTRON_MODEL: "mock-nemotron-model",
+        NVIDIA_MUSE_MODEL: "mock-muse-model",
         NVIDIA_BASE_URL: `http://127.0.0.1:${providerAddress.port}/v1/chat/completions`,
       },
       stdio: ["ignore", "pipe", "pipe"],
@@ -423,44 +452,78 @@ test("mocked NVIDIA integration performs bounded tool calls and streams only the
     ),
   );
 
-  const chatResponse = await fetch(`${baseUrl}/api/chat`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      messages: [
-        {
-          role: "user",
-          content: "Which district produced the most maize in 2026A?",
-        },
-      ],
-    }),
-  });
+  let chatResponse;
+  let stream;
+  try {
+    chatResponse = await fetch(`${baseUrl}/api/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      signal: AbortSignal.timeout(15_000),
+      body: JSON.stringify({
+        messages: [
+          {
+            role: "user",
+            content: "Which district produced the most maize in 2026A?",
+          },
+        ],
+      }),
+    });
+    stream = await chatResponse.text();
+  } catch (error) {
+    throw new Error(
+      `Mocked assistant request failed: ${String(error)}\nCaptured API output: ${childOutput}`,
+    );
+  }
   assert.equal(chatResponse.status, 200);
-  const stream = await chatResponse.text();
   assert.match(stream, /"status":"searching"/);
   assert.match(stream, /"status":"calculating"/);
+  assert.match(stream, /"status":"analyzing"/);
+  assert.match(stream, /"status":"reviewing"/);
+  assert.match(stream, /"status":"revising"/);
   assert.match(stream, /"status":"answering"/);
-  assert.match(stream, /Nyagatare leads the district ranking/);
+  assert.match(
+    stream,
+    /For 2026 Season A, Nyagatare leads the district production ranking/,
+  );
+  assert.doesNotMatch(stream, /Nyagatare leads the district ranking\./);
+  assert.doesNotMatch(stream, /private model reasoning/);
   assert.match(stream, /\[nisr-sas-2026-season-a-workbook\]/);
   assert.doesNotMatch(stream, /eval-only-not-a-real-key/);
-  assert.equal(providerRequests.length, 3);
-  assert.equal(providerRequests[0].payload.model, "mock-model");
+  assert.equal(providerRequests.length, 5);
+  assert.equal(providerRequests[0].payload.model, "mock-glm-model");
   assert.equal(providerRequests[0].payload.tool_choice, "required");
   assert.equal(providerRequests[0].payload.clear_thinking, true);
   assert.equal(providerRequests[0].payload.reasoning_effort, "max");
-  assert.equal(providerRequests[0].payload.temperature, 1);
-  assert.equal(providerRequests[0].payload.seed, 0);
-  assert.equal(providerRequests[0].payload.max_tokens, 2048);
+  assert.equal(providerRequests[0].payload.temperature, 0.5);
+  assert.equal(providerRequests[0].payload.top_p, 1);
+  assert.equal(providerRequests[0].payload.max_tokens, 1024);
   assert.equal(
     providerRequests[0].authorization,
     "Bearer eval-only-not-a-real-key",
   );
-  assert.equal(providerRequests[2].payload.stream, true);
-  assert.equal(providerRequests[2].payload.reasoning_effort, "max");
-  assert.equal(providerRequests[2].payload.max_tokens, 16_384);
-  assert.equal(providerRequests[2].payload.temperature, 1);
-  assert.equal(providerRequests[2].payload.seed, 0);
-  const finalMessages = providerRequests[2].payload.messages;
+  const analystRequest = providerRequests[2].payload;
+  assert.equal(analystRequest.model, "mock-nemotron-model");
+  assert.equal(analystRequest.stream, true);
+  assert.equal(analystRequest.max_tokens, 16_384);
+  assert.equal(analystRequest.temperature, 1);
+  assert.equal(analystRequest.top_p, 0.95);
+  assert.equal(analystRequest.chat_template_kwargs.enable_thinking, true);
+  const reviewerRequest = providerRequests[3].payload;
+  assert.equal(reviewerRequest.model, "mock-muse-model");
+  assert.equal(reviewerRequest.stream, false);
+  assert.equal(reviewerRequest.max_tokens, 8192);
+  assert.equal(reviewerRequest.temperature, 1);
+  assert.equal(reviewerRequest.top_p, 0.95);
+  assert.match(reviewerRequest.messages.at(-1).content, /2026 Season A/);
+  assert.match(reviewerRequest.messages.at(-1).content, /draft/);
+  const revisionRequest = providerRequests[4].payload;
+  assert.equal(revisionRequest.model, "mock-nemotron-model");
+  assert.equal(revisionRequest.stream, true);
+  assert.match(
+    revisionRequest.messages.at(-1).content,
+    /Evidence review feedback/,
+  );
+  const finalMessages = providerRequests[1].payload.messages;
   const toolResult = finalMessages.find((message) => message.role === "tool");
   assert.ok(toolResult);
   const parsedToolResult = JSON.parse(toolResult.content);
