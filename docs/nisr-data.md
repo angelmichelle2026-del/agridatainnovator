@@ -1,6 +1,6 @@
 # NISR agriculture data in AgriLens AI
 
-**Data checked:** 10 October 2026. AgriLens AI is an independent prototype, not an official NISR service.
+**Data checked:** 10 October 2026. Assistant architecture reviewed 14 October 2026. AgriLens AI is an independent prototype, not an official NISR service.
 
 ## Sources and coverage
 
@@ -34,11 +34,14 @@ To rebuild the 2026A extract after replacing the source workbook, run `python3 s
 
 ## AI assistant data flow
 
-- The chat API reads the checked-in NISR observations, district land records, derived 2026A province yields and workbook tables on the server. For each request it includes the national/district snapshot and uses keyword matching to add up to three relevant full workbook tables to the model context.
-- The server asks NVIDIA's OpenAI-compatible streaming endpoint (`moonshotai/kimi-k3` by default) to answer from that context, admit when data is absent, and cite only known source IDs. The UI turns valid source-ID tags into links. These are AI-generated responses, not official NISR interpretations.
-- Set `NVIDIA_API_KEY` only in the API server's runtime secret manager. The key is never sent to the browser or written into this repository. `NVIDIA_MODEL` can override the default model; `AGRILENS_DATA_DIR` can override the default data path.
-- The API accepts up to 12 recent messages, limits message sizes, and applies a basic in-memory limit of 12 requests per IP per minute. This is a prototype safeguard, not a substitute for durable production rate limiting or user authentication.
-- Chat messages and the public NISR context sent with them are forwarded to NVIDIA to generate a reply. The Express logger does not store message bodies; avoid sending personal or confidential farm information. Review NVIDIA's current data-handling terms before deployment.
+- The server indexes the checked-in national observations, district land records, derived 2026A province yields, and every row from the 35 supplied workbook tables. `GET /api/search?q=...` powers the bilingual evidence search in the assistant page. Search uses weighted lexical matching, official district/province names, and a maintained crop/indicator alias list; it returns bounded, source-linked results.
+- Chat requests use an allowlist of read-only tools: `search_agri_data`, `get_agri_data_catalog`, `query_nisr_snapshot`, and `analyze_nisr_data`. The analysis tool calculates supported national comparisons, district production rankings, province-yield rankings, and district land comparisons from exact imported records. It does not run arbitrary SQL or shell commands. The agent loop is bounded; only the final answer is streamed to the browser.
+- The assistant must call data tools before making statistical claims, preserve units and periods, cite source IDs returned by the tools, and explain missing data rather than infer a value. Tool results are evidence, not instructions. Province yields remain explicitly labelled as derived area-weighted summaries rather than separate NISR-published province estimates.
+- The default NVIDIA model is `z-ai/glm-5.3`; `NVIDIA_MODEL` can override it. Final answers use the provided 16,384-token ceiling, temperature `1`, seed `0`, and max reasoning effort by default; tool-planning calls use the same sampling/reasoning settings with a bounded 2,048-token output ceiling. NVIDIA’s Kimi K3 model card says Kimi K3 is no longer supported after 15 October 2026. Keep the model and compatible endpoint configurable, and confirm that the configured API key can access GLM-5.3 before deployment. See [assistant architecture and search](assistant-architecture.md) for the source-backed rationale and future search direction.
+- Set `NVIDIA_API_KEY` only in the API server's runtime secret manager. The key is never sent to the browser or written into this repository. `NVIDIA_BASE_URL` can override the OpenAI-compatible endpoint, `NVIDIA_REASONING_EFFORT` accepts `low`, `high`, or `max`, and `AGRILENS_DATA_DIR` can override the data path.
+- The API accepts up to 12 recent messages, limits message sizes and tool calls, and applies a basic in-memory limit of 12 chat requests per IP per minute. This is a prototype safeguard, not a substitute for durable production rate limiting or user authentication.
+- Recent chat messages and the relevant NISR records returned by tools are forwarded to NVIDIA to generate a reply. The full local snapshot is not attached to every chat request. The Express logger does not store message bodies; avoid sending personal or confidential farm information. Review NVIDIA's current data-handling terms before deployment.
+- Run `pnpm run test:agri-assistant` for deterministic bilingual search, source-value, ranking/calculation, missing-data and allowlist tests plus a mocked NVIDIA streaming integration test. This does not prove live API-key access; the production key and model must be smoke-tested in the deployment environment.
 
 ## Definitions and processing
 

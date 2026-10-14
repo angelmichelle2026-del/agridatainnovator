@@ -213,6 +213,19 @@ function SourceLink({ sourceId, label }: { sourceId: string; label?: string }) {
     </a>
   );
 }
+function searchResultKindLabel(kind: string, rw: boolean) {
+  const labels: Record<string, [string, string]> = {
+    district_land: ["District land", "Ubutaka bw’akarere"],
+    indicator_definition: ["Indicator", "Igipimo"],
+    national_indicator: ["National indicator", "Igipimo cy’igihugu"],
+    province_yield: ["Derived province yield", "Umusaruro wabazwe mu ntara"],
+    workbook_row: ["Workbook row", "Umurongo w’imbonerahamwe"],
+    workbook_table: ["Workbook table", "Imbonerahamwe ya NISR"],
+    workbook_value: ["NISR value", "Agaciro ka NISR"],
+  };
+  const label = labels[kind];
+  return label ? (rw ? label[1] : label[0]) : kind.replace(/_/g, " ");
+}
 function PageHeading({
   eyebrow,
   title,
@@ -2487,11 +2500,29 @@ export function AssistantPage({ language }: Props) {
     id: string;
     role: "user" | "assistant";
     content: string;
+    status?: "searching" | "retrieving" | "calculating" | "answering";
+  };
+  type CatalogResult = {
+    id: string;
+    kind: string;
+    title: string;
+    excerpt: string;
+    period?: string;
+    location?: string;
+    sourceId: string;
+    sourceTitle: string;
+    sourceUrl: string;
   };
   const rw = isRw(language);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [catalogQuery, setCatalogQuery] = useState("");
+  const [catalogResults, setCatalogResults] = useState<CatalogResult[]>([]);
+  const [catalogSearchState, setCatalogSearchState] = useState<
+    "idle" | "loading" | "done" | "error"
+  >("idle");
+  const [catalogSearchError, setCatalogSearchError] = useState("");
   const chatEndRef = useRef<HTMLDivElement>(null);
   const suggestedQuestions = [
     tx(
@@ -2510,6 +2541,49 @@ export function AssistantPage({ language }: Props) {
       "Ni akahe karere katanze umusaruro w’ibigori mwinshi muri Season A 2026?",
     ),
   ];
+
+  async function searchCatalog(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const query = catalogQuery.trim();
+    if (!query || catalogSearchState === "loading") return;
+    setCatalogSearchState("loading");
+    setCatalogSearchError("");
+    try {
+      const response = await fetch(
+        `/api/search?q=${encodeURIComponent(query)}&limit=6`,
+      );
+      const payload = (await response.json().catch(() => null)) as {
+        error?: unknown;
+        results?: unknown;
+      } | null;
+      if (!response.ok) {
+        throw new Error(
+          typeof payload?.error === "string"
+            ? payload.error
+            : "The NISR search could not be completed. Please try again.",
+        );
+      }
+      const hits = Array.isArray(payload?.results)
+        ? payload.results.filter(
+            (result): result is CatalogResult =>
+              Boolean(result) &&
+              typeof result === "object" &&
+              typeof (result as CatalogResult).title === "string" &&
+              typeof (result as CatalogResult).sourceId === "string",
+          )
+        : [];
+      setCatalogResults(hits);
+      setCatalogSearchState("done");
+    } catch (error) {
+      setCatalogResults([]);
+      setCatalogSearchError(
+        error instanceof Error && error.message
+          ? error.message
+          : "The NISR search could not be completed. Please try again.",
+      );
+      setCatalogSearchState("error");
+    }
+  }
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ block: "end", behavior: "auto" });
@@ -2575,14 +2649,41 @@ export function AssistantPage({ language }: Props) {
           streamComplete = true;
           return;
         }
-        const event = JSON.parse(data) as { text?: unknown; error?: unknown };
+        const event = JSON.parse(data) as {
+          text?: unknown;
+          error?: unknown;
+          status?: unknown;
+          done?: unknown;
+        };
         if (typeof event.error === "string") throw new Error(event.error);
+        if (event.done === true) {
+          streamComplete = true;
+          return;
+        }
+        if (
+          event.status === "searching" ||
+          event.status === "retrieving" ||
+          event.status === "calculating" ||
+          event.status === "answering"
+        ) {
+          setMessages((current) =>
+            current.map((message) =>
+              message.id === assistantId
+                ? { ...message, status: event.status as ChatMessage["status"] }
+                : message,
+            ),
+          );
+        }
         if (typeof event.text === "string" && event.text.length > 0) {
           receivedText = true;
           setMessages((current) =>
             current.map((message) =>
               message.id === assistantId
-                ? { ...message, content: message.content + event.text }
+                ? {
+                    ...message,
+                    status: undefined,
+                    content: message.content + event.text,
+                  }
                 : message,
             ),
           );
@@ -2621,12 +2722,48 @@ export function AssistantPage({ language }: Props) {
       );
     } finally {
       setIsSending(false);
+      setMessages((current) =>
+        current.map((message) =>
+          message.id === assistantId
+            ? { ...message, status: undefined }
+            : message,
+        ),
+      );
     }
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     void sendMessage(input);
+  }
+
+  function activityLabel(status?: ChatMessage["status"]) {
+    if (status === "calculating") {
+      return tx(
+        rw,
+        "Calculating from the source data…",
+        "Turimo kubara duhereye ku makuru y’inkomoko…",
+      );
+    }
+    if (status === "retrieving") {
+      return tx(
+        rw,
+        "Retrieving matching NISR records…",
+        "Turimo gushaka inyandiko za NISR zijyanye n’ikibazo…",
+      );
+    }
+    if (status === "answering") {
+      return tx(
+        rw,
+        "Preparing a sourced answer…",
+        "Turimo gutegura igisubizo gifite inkomoko…",
+      );
+    }
+    return tx(
+      rw,
+      "Searching the NISR snapshot…",
+      "Turimo gushakisha mu makuru ya NISR…",
+    );
   }
 
   function citationsIn(content: string) {
@@ -2681,6 +2818,120 @@ export function AssistantPage({ language }: Props) {
           <span className="ml-auto rounded-full border border-[#cfdbc5] bg-[#eff3e8] px-2.5 py-1 text-[9px] font-bold uppercase tracking-[.1em] text-[#456749]">
             {tx(rw, "NISR snapshot", "Amakuru ya NISR")}
           </span>
+        </div>
+
+        <div className="border-b border-border bg-[#faf9f4] px-4 py-3 sm:px-5">
+          <form
+            onSubmit={searchCatalog}
+            className="mx-auto flex w-full max-w-[900px] items-center gap-2"
+            data-testid="assistant-search-form"
+          >
+            <label htmlFor="assistant-catalog-search" className="sr-only">
+              {tx(rw, "Search the NISR snapshot", "Shakisha mu makuru ya NISR")}
+            </label>
+            <div className="flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-xl border border-border bg-background px-3">
+              <Search size={15} className="shrink-0 text-muted-foreground" />
+              <input
+                id="assistant-catalog-search"
+                value={catalogQuery}
+                onChange={(event) => setCatalogQuery(event.target.value)}
+                maxLength={240}
+                placeholder={tx(
+                  rw,
+                  "Search crops, indicators, districts or tables…",
+                  "Shakisha ibihingwa, ibipimo, uturere cyangwa imbonerahamwe…",
+                )}
+                className="min-w-0 flex-1 bg-transparent py-2 text-[11px] outline-none placeholder:text-muted-foreground/80"
+                data-testid="assistant-search-input"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={
+                catalogSearchState === "loading" || !catalogQuery.trim()
+              }
+              className="inline-flex h-11 shrink-0 items-center gap-2 rounded-xl bg-[#244636] px-3.5 text-[10px] font-semibold text-white transition hover:bg-[#315f47] disabled:cursor-not-allowed disabled:opacity-45"
+              data-testid="assistant-search-submit"
+            >
+              {catalogSearchState === "loading" ? (
+                <LoaderCircle size={13} className="animate-spin" />
+              ) : (
+                <Search size={13} />
+              )}
+              {tx(rw, "Search data", "Shakisha")}
+            </button>
+          </form>
+          {catalogSearchState === "error" && (
+            <p
+              className="mx-auto mt-2 max-w-[900px] text-[10px] text-destructive"
+              role="alert"
+            >
+              {catalogSearchError}
+            </p>
+          )}
+          {catalogSearchState === "done" && catalogResults.length === 0 && (
+            <p
+              className="mx-auto mt-2 max-w-[900px] text-[10px] text-muted-foreground"
+              role="status"
+            >
+              {tx(
+                rw,
+                "No matching records found. Try a crop, district, indicator or season.",
+                "Nta nyandiko zijyanye n’icyo washakishije. Gerageza igihingwa, akarere, igipimo cyangwa igihembwe.",
+              )}
+            </p>
+          )}
+          {catalogResults.length > 0 && (
+            <div
+              className="mx-auto mt-3 grid w-full max-w-[900px] gap-2 sm:grid-cols-2"
+              aria-live="polite"
+              data-testid="assistant-search-results"
+            >
+              {catalogResults.map((result) => (
+                <article
+                  key={result.id}
+                  className="min-w-0 rounded-xl border border-border/80 bg-background p-3"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="line-clamp-2 text-[11px] font-semibold leading-4">
+                      {result.title}
+                    </p>
+                    <span className="shrink-0 rounded-full bg-[#eff3e8] px-2 py-0.5 text-[8px] font-bold uppercase tracking-wide text-[#456749]">
+                      {searchResultKindLabel(result.kind, rw)}
+                    </span>
+                  </div>
+                  <p className="mt-1 line-clamp-2 text-[9px] leading-4 text-muted-foreground">
+                    {result.excerpt}
+                  </p>
+                  <div className="mt-2 flex flex-wrap items-center justify-between gap-2 border-t border-border/70 pt-2">
+                    <span className="text-[9px] text-muted-foreground">
+                      {[result.location, result.period]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </span>
+                    <div className="flex items-center gap-3">
+                      <SourceLink
+                        sourceId={result.sourceId}
+                        label={result.sourceTitle}
+                      />
+                      <button
+                        type="button"
+                        disabled={isSending}
+                        onClick={() =>
+                          void sendMessage(
+                            `${result.title}${result.period ? ` (${result.period})` : ""}. Explain what this NISR record shows and its planning relevance.`,
+                          )
+                        }
+                        className="text-[9px] font-semibold text-primary hover:underline disabled:opacity-50"
+                      >
+                        {tx(rw, "Ask AgriLens", "Baza AgriLens")}
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
         </div>
 
         <div
@@ -2752,11 +3003,7 @@ export function AssistantPage({ language }: Props) {
                                 size={13}
                                 className="animate-spin"
                               />
-                              {tx(
-                                rw,
-                                "Looking through the NISR data…",
-                                "Turareba mu makuru ya NISR…",
-                              )}
+                              {activityLabel(message.status)}
                             </span>
                           ) : null)}
                       </p>
