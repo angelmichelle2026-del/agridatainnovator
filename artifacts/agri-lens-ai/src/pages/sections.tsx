@@ -402,10 +402,10 @@ export function HomePage({ language }: Props) {
   const latestTag = seasonName(seed.year, seed.season);
   return (
     <div className="page-enter">
-      <section className="shell-grid relative overflow-hidden rounded-[22px] border border-[#d8d5c6] bg-[#ecefe4] px-5 py-7 sm:px-9 sm:py-9 lg:px-11">
+      <section className="hero-meadow shell-grid relative overflow-hidden rounded-[26px] border px-5 py-7 sm:px-9 sm:py-10 lg:px-11 lg:py-12">
         <div className="pointer-events-none absolute -right-16 -top-28 h-[330px] w-[330px] rounded-full border border-[#d4dbc8] sm:right-12 sm:top-[-180px] sm:h-[480px] sm:w-[480px]" />
-        <div className="relative z-[1] max-w-[790px]">
-          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#cad4bf] bg-[#f6f6ef] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[.12em] text-[#426348]">
+        <div className="hero-copy relative z-[1] max-w-[790px]">
+          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#d9c9de] bg-white/75 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[.12em] text-primary shadow-sm backdrop-blur-sm">
             <span className="h-1.5 w-1.5 rounded-full bg-[#638052]" />
             {tx(
               rw,
@@ -413,14 +413,14 @@ export function HomePage({ language }: Props) {
               "Imibare ya NISR · igenzuwe ku wa 10 Ukwakira 2026",
             )}
           </div>
-          <h1 className="display-font max-w-[740px] text-[37px] font-extrabold leading-[1.04] tracking-[-.065em] text-[#213b30] sm:text-[56px] lg:text-[64px]">
+          <h1 className="display-font max-w-[740px] text-[37px] font-bold leading-[1.04] tracking-[-.06em] text-[#30263a] sm:text-[56px] lg:text-[64px]">
             {tx(
               rw,
               "Start with what the survey says.",
               "Tangira ku byo ubushakashatsi buvuga.",
             )}
           </h1>
-          <p className="mt-5 max-w-[640px] text-[14px] leading-6 text-[#526456] sm:text-[16px] sm:leading-7">
+          <p className="mt-5 max-w-[620px] text-[14px] leading-6 text-[#655d6b] sm:text-[16px] sm:leading-7">
             {tx(
               rw,
               "A practical starting point for Rwanda’s agriculture planners: explore NISR survey results, compare like-for-like seasons, see crop production across districts, and trace every number to its source.",
@@ -430,7 +430,7 @@ export function HomePage({ language }: Props) {
           <div className="mt-7 flex flex-wrap gap-3">
             <Link
               href="/dashboard"
-              className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-[#244636] px-4 text-[12px] font-semibold text-white hover:bg-[#315943]"
+              className="inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-5 text-[12px] font-semibold text-primary-foreground shadow-sm hover:bg-primary/90"
               data-testid="link-home-dashboard"
             >
               {tx(
@@ -442,7 +442,7 @@ export function HomePage({ language }: Props) {
             </Link>
             <Link
               href="/compare"
-              className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-[#c5cdbd] bg-[#f6f6ef] px-4 text-[12px] font-semibold text-[#284837] hover:bg-white"
+              className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[#d8c9dd] bg-white/70 px-5 text-[12px] font-semibold text-primary transition-colors hover:bg-white"
               data-testid="link-home-compare"
             >
               {tx(rw, "Compare two districts", "Gereranya uturere tubiri")}
@@ -450,7 +450,7 @@ export function HomePage({ language }: Props) {
             </Link>
           </div>
         </div>
-        <div className="relative z-[1] mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-[#d1d7c8] pt-4 text-[10px] font-semibold text-[#637363]">
+        <div className="relative z-[1] mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-[#d7c9dc] pt-4 text-[10px] font-semibold text-[#6f6574]">
           <span className="inline-flex items-center gap-2">
             <span className="h-1.5 w-1.5 rounded-full bg-[#638052]" />
             {tx(
@@ -2593,6 +2593,7 @@ export function AssistantPage({ language }: Props) {
   }
 
   useEffect(() => {
+    if (messages.length === 0) return;
     chatEndRef.current?.scrollIntoView({ block: "end", behavior: "auto" });
   }, [messages, isSending]);
 
