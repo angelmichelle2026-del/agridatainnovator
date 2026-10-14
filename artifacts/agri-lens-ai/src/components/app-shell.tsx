@@ -1,21 +1,61 @@
-import { type ReactNode } from 'react';
-import { Link, useLocation } from 'wouter';
+import { type ReactNode } from "react";
+import { Link, useLocation } from "wouter";
 import {
-  Activity, ArrowUpRight, BarChart3, BookOpen, ChevronRight, CircleHelp,
-  Command, GitCompareArrows, Home, Languages, Leaf, MessageSquareText,
-  ScanSearch, ShieldCheck,
-} from 'lucide-react';
+  Activity,
+  ArrowUpRight,
+  BarChart3,
+  BookOpen,
+  CircleHelp,
+  Command,
+  GitCompareArrows,
+  Home,
+  Languages,
+  Leaf,
+  MessageSquareText,
+  ScanSearch,
+  ShieldCheck,
+} from "lucide-react";
 
-export type Language = 'en' | 'rw';
+export type Language = "en" | "rw";
 
 const navigation = [
-  { href: '/', icon: Home, en: 'Overview', rw: 'Incamake' },
-  { href: '/data', icon: ScanSearch, en: 'Data explorer', rw: 'Shakisha amakuru' },
-  { href: '/dashboard', icon: BarChart3, en: 'Dashboard', rw: 'Imbonerahamwe' },
-  { href: '/compare', icon: GitCompareArrows, en: 'Compare', rw: 'Gereranya' },
-  { href: '/insights', icon: Activity, en: 'Insights', rw: 'Ibyagaragaye' },
-  { href: '/assistant', icon: MessageSquareText, en: 'Assistant', rw: 'Umufasha' },
-  { href: '/about', icon: BookOpen, en: 'Data & methodology', rw: 'Amakuru n’uburyo' },
+  { href: "/", icon: Home, en: "Overview", rw: "Incamake" },
+  {
+    href: "/data",
+    icon: ScanSearch,
+    en: "Explore data",
+    rw: "Shakisha amakuru",
+  },
+  {
+    href: "/dashboard",
+    icon: BarChart3,
+    en: "Seasonal picture",
+    rw: "Ishusho y’ibihe",
+  },
+  {
+    href: "/compare",
+    icon: GitCompareArrows,
+    en: "Compare districts",
+    rw: "Gereranya uturere",
+  },
+  {
+    href: "/insights",
+    icon: Activity,
+    en: "Changes & context",
+    rw: "Impinduka n’ibisobanuro",
+  },
+  {
+    href: "/assistant",
+    icon: MessageSquareText,
+    en: "Ask AgriLens",
+    rw: "Baza AgriLens",
+  },
+  {
+    href: "/about",
+    icon: BookOpen,
+    en: "Sources & how to read",
+    rw: "Inkomoko n’uko wasoma",
+  },
 ];
 
 type Props = {
@@ -26,99 +66,158 @@ type Props = {
 
 export function AppShell({ children, language, onLanguageChange }: Props) {
   const [location] = useLocation();
-  const rw = language === 'rw';
+  const rw = language === "rw";
+  const currentPage = navigation.find((item) => item.href === location);
+
   return (
-    <div className="grain min-h-[100dvh] bg-background text-foreground">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[258px] flex-col bg-[hsl(var(--sidebar))] text-[hsl(var(--sidebar-foreground))] lg:flex">
-        <Link href="/" className="flex h-[82px] items-center gap-3 border-b border-white/10 px-6" data-testid="link-brand-home">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#b7d18e] text-[#234d3b]"><Leaf size={21} strokeWidth={2.2} /></span>
-          <span className="min-w-0">
-            <span className="display-font block text-[15px] font-extrabold tracking-[-.04em]">AgriLens <span className="text-[#c1d69b]">AI</span></span>
-            <span className="mt-0.5 block text-[10px] font-medium tracking-[.12em] text-white/50">RWANDA · PROTOTYPE</span>
-          </span>
-        </Link>
-        <div className="px-4 pt-7">
-          <p className="px-3 pb-3 text-[10px] font-bold uppercase tracking-[.16em] text-white/40">{rw ? 'AHO UHEREREYE' : 'WORKSPACE'}</p>
-          <nav aria-label={rw ? 'Ibyiciro by’ingenzi' : 'Primary navigation'} className="space-y-1">
+    <div className="grain app-frame min-h-[100dvh] bg-background text-foreground">
+      <header className="app-header sticky top-0 z-40 border-b border-border/70 bg-background/90 backdrop-blur-xl">
+        <div className="mx-auto flex min-h-[72px] max-w-[1600px] items-center gap-3 px-4 sm:px-7 xl:px-10 2xl:px-12">
+          <Link
+            href="/"
+            className="group flex shrink-0 items-center gap-2.5 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            data-testid="link-brand-home"
+          >
+            <span className="brand-mark flex h-10 w-10 items-center justify-center rounded-[15px] text-primary-foreground shadow-sm transition-transform group-hover:-rotate-6">
+              <Leaf size={20} strokeWidth={2} />
+            </span>
+            <span className="min-w-0">
+              <span className="display-font block text-[15px] font-extrabold leading-none tracking-[-.055em]">
+                AgriLens <span className="text-primary">AI</span>
+              </span>
+              <span className="mt-1 hidden text-[9px] font-semibold uppercase tracking-[.12em] text-muted-foreground sm:block">
+                Rwanda · Field intelligence
+              </span>
+            </span>
+          </Link>
+
+          <nav
+            aria-label={rw ? "Ibyiciro by’ingenzi" : "Primary navigation"}
+            className="desktop-navigation mx-2 hidden min-w-0 flex-1 items-center justify-center gap-0.5 overflow-x-auto xl:flex"
+          >
             {navigation.map(({ href, icon: Icon, en, rw: rwLabel }) => {
               const active = location === href;
+              const label = rw ? rwLabel : en;
               return (
                 <Link
                   key={href}
                   href={href}
-                  data-testid={`nav-${href === '/' ? 'overview' : href.slice(1)}`}
-                  aria-current={active ? 'page' : undefined}
-                  className={`group flex min-h-11 items-center gap-3 rounded-lg px-3 text-[13px] font-medium transition-colors ${active ? 'bg-[#dce8c7] text-[#244d39]' : 'text-white/72 hover:bg-white/8 hover:text-white'}`}
+                  aria-label={label}
+                  title={label}
+                  aria-current={active ? "page" : undefined}
+                  data-testid={`nav-${href === "/" ? "overview" : href.slice(1)}`}
+                  className={`nav-link group inline-flex min-h-10 shrink-0 items-center justify-center gap-1.5 rounded-full px-2.5 text-[11px] font-semibold transition-all xl:px-3 xl:text-[12px] ${active ? "is-active bg-secondary text-primary" : "text-muted-foreground hover:bg-white/70 hover:text-foreground"}`}
                 >
-                  <Icon size={17} strokeWidth={active ? 2.2 : 1.8} />
-                  <span className="flex-1">{rw ? rwLabel : en}</span>
-                  {active && <ChevronRight size={14} />}
+                  <Icon size={14} strokeWidth={active ? 2.1 : 1.8} />
+                  <span className="hidden xl:inline 2xl:text-[12px]">
+                    {label}
+                  </span>
                 </Link>
               );
             })}
           </nav>
-        </div>
-        <div className="mt-auto px-4 pb-5">
-          <div className="rounded-xl border border-white/10 bg-white/[.045] p-4">
-            <div className="mb-3 flex items-center gap-2 text-[#c1d69b]">
-              <span className="h-2 w-2 rounded-full bg-[#c4d79d]" />
-              <span className="text-[10px] font-bold uppercase tracking-[.12em]">{rw ? 'IMITERERE Y’AMAKURU' : 'DATA STATUS'}</span>
-            </div>
-            <p className="text-[12px] font-semibold leading-5 text-white/90">{rw ? 'Amakuru nyakuri ntarashyirwamo.' : 'No source data loaded yet.'}</p>
-            <p className="mt-1.5 text-[11px] leading-[1.55] text-white/50">{rw ? 'Ibikoresho by’imibare bizagaragara amakuru amaze gutegurwa.' : 'Planning tools will become available once verified data is prepared.'}</p>
-            <Link href="/about" className="mt-3 inline-flex items-center gap-1 text-[11px] font-semibold text-[#d5e3bb] hover:text-white" data-testid="link-sidebar-methodology">
-              {rw ? 'Soma ibisobanuro' : 'Read the approach'} <ArrowUpRight size={13} />
-            </Link>
-          </div>
-          <div className="mt-4 flex items-center gap-2 px-3 text-[10px] text-white/38">
-            <ShieldCheck size={13} /> {rw ? 'Prototype yigenga · Si serivisi ya NISR' : 'Independent prototype · Not an NISR service'}
-          </div>
-        </div>
-      </aside>
 
-      <div className="min-h-[100dvh] lg:pl-[258px]">
-        <header className="sticky top-0 z-20 border-b border-border/80 bg-[hsl(var(--background)/.94)] backdrop-blur-xl">
-          <div className="mx-auto flex h-[66px] max-w-[1500px] items-center justify-between gap-4 px-4 sm:px-7 xl:px-10">
-            <div className="flex min-w-0 items-center gap-3">
-              <Link href="/" className="flex items-center gap-2 lg:hidden" aria-label="AgriLens AI home" data-testid="link-mobile-brand">
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground"><Leaf size={17} /></span>
-              </Link>
-              <div className="hidden items-center gap-2 text-xs text-muted-foreground sm:flex">
-                <Command size={14} />
-                <span>{rw ? 'Igenamigambi ry’ubuhinzi' : 'District agriculture planning'}</span>
-                <span className="text-border">/</span>
-                <span className="font-semibold text-foreground">{navigation.find(item => item.href === location)?.[rw ? 'rw' : 'en'] ?? (rw ? 'Ntiboneka' : 'Not found')}</span>
-              </div>
-              <span className="font-semibold text-[13px] lg:hidden">AgriLens AI</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="hidden items-center gap-1.5 rounded-full border border-[#cbd9bd] bg-[#eff3e8] px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-[.08em] text-[#456749] sm:inline-flex">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#66834f]" /> {rw ? 'prototype' : 'prototype'}
-              </span>
-              <div className="flex items-center gap-1 rounded-lg border border-border bg-card p-1" role="group" aria-label={rw ? 'Hitamo ururimi' : 'Choose language'}>
-                <Languages size={15} className="ml-1.5 text-muted-foreground" />
-                <button type="button" onClick={() => onLanguageChange('en')} aria-pressed={!rw} data-testid="button-language-en" className={`rounded-md px-2 py-1.5 text-[11px] font-bold transition-colors ${!rw ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}>EN</button>
-                <button type="button" onClick={() => onLanguageChange('rw')} aria-pressed={rw} data-testid="button-language-rw" className={`rounded-md px-2 py-1.5 text-[11px] font-bold transition-colors ${rw ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}>RW</button>
-              </div>
+          <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3 lg:ml-0">
+            <span className="hidden items-center gap-1.5 rounded-full border border-[#d8e2d5] bg-[#f1f6ef] px-2.5 py-1.5 text-[9px] font-bold uppercase tracking-[.07em] text-[#49664f] xl:inline-flex">
+              <span className="status-dot h-1.5 w-1.5 rounded-full bg-[#72957b]" />
+              {rw ? "amakuru" : "NISR snapshot"}
+            </span>
+            <div
+              className="language-switch flex items-center gap-0.5 rounded-full border border-border/80 bg-white/80 p-1 shadow-sm"
+              role="group"
+              aria-label={rw ? "Hitamo ururimi" : "Choose language"}
+            >
+              <Languages size={14} className="ml-1 text-muted-foreground" />
+              <button
+                type="button"
+                onClick={() => onLanguageChange("en")}
+                aria-pressed={!rw}
+                data-testid="button-language-en"
+                className={`rounded-full px-2.5 py-1.5 text-[10px] font-bold transition-colors ${!rw ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-secondary"}`}
+              >
+                EN
+              </button>
+              <button
+                type="button"
+                onClick={() => onLanguageChange("rw")}
+                aria-pressed={rw}
+                data-testid="button-language-rw"
+                className={`rounded-full px-2.5 py-1.5 text-[10px] font-bold transition-colors ${rw ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-secondary"}`}
+              >
+                RW
+              </button>
             </div>
           </div>
-          <nav className="flex flex-wrap items-center gap-1 border-t border-border/70 px-3 py-2 lg:hidden" aria-label={rw ? 'Kujya mu bice by’urubuga' : 'Mobile navigation'}>
-            {navigation.map(({ href, icon: Icon, en, rw: rwLabel }) => {
-              const active = location === href;
-              return <Link key={href} href={href} aria-current={active ? 'page' : undefined} data-testid={`mobile-nav-${href === '/' ? 'overview' : href.slice(1)}`} className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-[11px] font-semibold ${active ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}><Icon size={14} />{rw ? rwLabel : en}</Link>;
-            })}
-          </nav>
-        </header>
-        <main className="mx-auto max-w-[1500px] px-4 pb-14 pt-7 sm:px-7 sm:pt-9 xl:px-10">
-          {children}
-          <footer className="mt-16 flex flex-col gap-3 border-t border-border/80 pt-5 text-[11px] leading-5 text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-            <span>{rw ? 'AgriLens AI ni prototype yigenga yo gufasha igenamigambi ry’ubuhinzi.' : 'AgriLens AI is an independent prototype for agricultural planning.'}</span>
-            <Link href="/about" className="inline-flex items-center gap-1 font-semibold text-primary hover:underline" data-testid="link-footer-about">
-              <CircleHelp size={13} /> {rw ? 'Ku bijyanye n’amakuru' : 'About data & methodology'}
-            </Link>
-          </footer>
-        </main>
-      </div>
+        </div>
+
+        <nav
+          className="mobile-navigation flex items-center gap-1 overflow-x-auto border-t border-border/50 px-3 py-2 xl:hidden"
+          aria-label={rw ? "Kujya mu bice by’urubuga" : "Mobile navigation"}
+        >
+          {navigation.map(({ href, icon: Icon, en, rw: rwLabel }) => {
+            const active = location === href;
+            const label = rw ? rwLabel : en;
+            return (
+              <Link
+                key={href}
+                href={href}
+                aria-label={label}
+                aria-current={active ? "page" : undefined}
+                data-testid={`mobile-nav-${href === "/" ? "overview" : href.slice(1)}`}
+                className={`inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-full px-3 text-[11px] font-semibold transition-colors ${active ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-secondary hover:text-foreground"}`}
+              >
+                <Icon size={14} />
+                {label}
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="hidden border-t border-border/45 xl:block">
+          <div className="mx-auto flex h-8 max-w-[1600px] items-center gap-2 px-10 text-[10px] text-muted-foreground 2xl:px-12">
+            <Command size={13} />
+            <span>
+              {rw ? "Igenamigambi ry’ubuhinzi" : "Rwanda agriculture planning"}
+            </span>
+            <span className="text-border">/</span>
+            <span className="font-semibold text-foreground">
+              {currentPage?.[rw ? "rw" : "en"] ??
+                (rw ? "Ntiboneka" : "Not found")}
+            </span>
+          </div>
+        </div>
+      </header>
+
+      <main className="mx-auto min-h-[calc(100dvh-110px)] max-w-[1600px] px-4 pb-14 pt-6 sm:px-7 sm:pt-8 xl:px-10 xl:pt-9 2xl:px-12">
+        {children}
+        <footer className="app-footer mt-14 flex flex-col gap-3 border-t border-border/80 pt-5 text-[11px] leading-5 text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2">
+            <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-secondary text-primary">
+              <Leaf size={14} />
+            </span>
+            <span>
+              {rw
+                ? "AgriLens AI ni prototype yigenga yo gufasha igenamigambi ry’ubuhinzi."
+                : "AgriLens AI is an independent prototype for agricultural planning."}
+            </span>
+          </div>
+          <Link
+            href="/about"
+            className="inline-flex items-center gap-1 font-semibold text-primary hover:underline"
+            data-testid="link-footer-about"
+          >
+            <CircleHelp size={13} />
+            {rw ? "Ku bijyanye n’amakuru" : "Sources & how to read"}
+            <ArrowUpRight size={12} />
+          </Link>
+          <span className="inline-flex items-center gap-1.5 text-[10px] text-muted-foreground/80">
+            <ShieldCheck size={13} />
+            {rw
+              ? "Prototype yigenga · Si serivisi ya NISR"
+              : "Not an NISR service"}
+          </span>
+        </footer>
+      </main>
     </div>
   );
 }

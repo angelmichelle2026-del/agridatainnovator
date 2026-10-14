@@ -1,58 +1,47 @@
 # AgriLens AI
 
-An independent prototype that will make verified Rwanda agricultural statistics easier to discover and use for district planners.
+AgriLens AI is an independent Rwanda agriculture-planning prototype. The app includes source-linked NISR Seasonal Agricultural Survey (SAS) national observations through 2026 Season B, district land-use observations for 2025 Seasons A/B and 2026 Season A, a searchable browser for all 35 tables in the supplied 2026 Season A workbook, interactive crop-production visuals, and area-weighted crop-yield comparisons across provinces and City of Kigali.
 
-## Run & Operate
+## Run and operate
 
-- `pnpm --filter @workspace/agri-lens-ai run dev` — run the AgriLens web app
-- `pnpm --filter @workspace/agri-lens-ai run typecheck` — check the AgriLens frontend
-- `pnpm --filter @workspace/agri-lens-ai run test:smoke` — check the running app's entry page
-- `pnpm --filter @workspace/agri-lens-ai run build` — build the AgriLens frontend
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- `pnpm --filter @workspace/agri-lens-ai run dev` — run the AgriLens web app (`PORT` and `BASE_PATH` are required by Vite; `/api` is proxied to `API_SERVER_URL`, default `http://127.0.0.1:3001`).
+- `pnpm --filter @workspace/agri-lens-ai run typecheck` — check the frontend.
+- `PORT=4173 BASE_PATH=/ pnpm --filter @workspace/agri-lens-ai run build` — build the frontend.
+- `node scripts/verify_nisr_data.mjs` — verify source data, coverage, workbook tables, and downloads.
+- `python3 scripts/import_nisr_sas.py` — rebuild 2025 district land use from the annual report (requires Poppler `pdftotext`).
+- `python3 scripts/import_nisr_sas_2026a_workbook.py` — rebuild the 35-table dataset, compact crop and province-yield chart data, and normalized 2026A district extract from the checked-in workbook (requires `openpyxl`).
+- After a full build, `PORT=3001 pnpm --filter @workspace/api-server run dev` — run the Express API and serve the built SPA from one origin (`/` and `/assistant` plus `/api/*`). Configure `NVIDIA_API_KEY` as a **server-side secret**; never expose it in Vite variables or client code. `NVIDIA_MODEL` optionally overrides the default `moonshotai/kimi-k3` model. `AGRILENS_DATA_DIR` can override the default NISR data directory. For Vite hot-reload, run the frontend and API separately; Vite proxies `/api` to `API_SERVER_URL`.
+- `pnpm run typecheck` / `pnpm run build` — full workspace checks; frontend Vite needs `PORT` and `BASE_PATH`.
 
 ## Stack
 
-- pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+- pnpm workspaces, TypeScript 5.9, React, Vite, Tailwind and Recharts
+- API: Express 5 with a rate-limited, streaming NVIDIA chat route; the NVIDIA credential is read only by the server.
+- Database scaffold: PostgreSQL + Drizzle ORM
+- The chat assistant sends questions and recent conversation turns to NVIDIA. It adds the repository’s checked NISR snapshot as grounding context, retrieves relevant Season A workbook tables, and links supported answers to known NISR sources. Avoid entering confidential farm or personal information; responses are AI-generated and should be checked against the cited source.
 
 ## Where things live
 
-- AgriLens web app: `artifacts/agri-lens-ai/`
-- Shared API: `artifacts/api-server/`
-- API contract: `lib/api-spec/openapi.yaml`
-- Database schema: `lib/db/src/schema/`
+- Web app: `artifacts/agri-lens-ai/`
+- Blank backend environment template (not a credential): `artifacts/api-server/.env.example`
+- National observations, metric definitions and sources: `artifacts/agri-lens-ai/src/data/national-indicators.json`
+- District land use: `artifacts/agri-lens-ai/src/data/district-land-2025.json` and `district-land-2026a.json`
+- All 35 Season A workbook tables: `artifacts/agri-lens-ai/src/data/nisr-sas-2026-season-a-tables.json`
+- Compact Table 6/Table 15 chart input: `artifacts/agri-lens-ai/src/data/crop-visuals-2026a.json`
+- Province yield comparison input: `artifacts/agri-lens-ai/src/data/province-yields-2026a.json` (Tables 12, 13 and 15; derived area-weighted kg/ha)
+- Downloadable source workbook: `artifacts/agri-lens-ai/public/data/nisr-sas-2026-season-a-tables.xlsx`
+- District CSVs: `artifacts/agri-lens-ai/public/data/district-land-2025.csv` and `district-land-2026-season-a.csv`
+- Import and validation scripts: `scripts/import_nisr_sas.py`, `scripts/import_nisr_sas_2026a_workbook.py`, `scripts/verify_nisr_data.mjs`
+- Source, methods and limits: `docs/nisr-data.md`
 
-## Architecture decisions
+## Data and product guardrails
 
-- Build the MVP in small, verifiable phases; preserve working parts.
-- Use deterministic, source-grounded data queries before considering optional AI phrasing.
-- Only use verified source data; never invent figures, datasets, citations, download status, or licenses.
-- Treat productivity signals as prompts to investigate, not proof of a cause or problem.
-
-## Product
-
-The intended primary users are Rwanda district agricultural planners. The planned MVP includes a data access hub, dashboard and valid comparisons, transparent productivity signals, and constrained source-cited Q&A. The Phase 1 shell contains no agricultural observations. This is an independent hackathon prototype, not an official NISR service.
-
-## User preferences
-
-- Keep implementation staged and focused on practical value from verified NISR data.
-- Do not present fabricated or unverified agricultural statistics as real.
-- Support English and Kinyarwanda for core interface text without overstating translation coverage.
-
-## Gotchas
-
-- The attached research is an executive summary, not a verified source catalog or actual NISR workbook. Verify source files, schemas, URLs, and licensing before ingestion or attribution.
-- There are no agricultural workbooks or processed observations in this project yet. Keep data pages explicit until real data has been supplied and validated.
-
-## Pointers
-
-- See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+- The workbook supplied for this task has 35 worksheets; the worksheets attribute their contents to NISR SAS 2026. The linked NISR Season A release page is cited; a direct NISR URL for this exact workbook and its reuse terms were not confirmed. Consult the source and current NISR terms before redistribution.
+- National indicators cover SAS 2025 Seasons A–C and SAS 2026 Seasons A–B. District land use covers 30 districts for 2025 Seasons A/B and 2026 Season A, with separate national totals.
+- Areas are reported in thousand hectares. Source dashes remain missing values, not zero. The 2025 district figures retain report rounding; 2026 workbook values preserve greater precision. The interactive workbook view rounds long values for legibility; downloads retain full precision.
+- The 2026 workbook also includes district crop-area, yield, production, input-use and agricultural-practice tables. Do not conflate those measures with the separate district land-use comparisons.
+- The seasonal dashboard filter applies to headline cards and the practice/land charts. Seasons A and B compare matched 2025/2026 values; Season C shows the available 2025C values only. The detailed crop workbook contains Season A tables, and unavailable seasons are disclosed rather than filled with other-period data.
+- Crop rankings and district comparisons can be narrowed by province and district using the official [Government of Rwanda local-government directory](https://www.gov.rw/government/directory/local-government). The geographic mapping is a filter only; it does not create aggregated statistics.
+- Province/city crop yields are derived as summed district production divided by summed harvested area (area-weighted), cross-checked against NISR Table 13 and benchmarked against its National row. These are derived 2026 Season A summaries—not separately published NISR regional yields or a multi-season trend.
+- Survey-season differences do not establish cause, statistical significance or annual averages. Separately reported area categories should not be assumed additive.
+- AgriLens AI is independent and is not an official NISR service. The interface includes an initial Kinyarwanda translation; technical statistical language may remain in English pending review.
