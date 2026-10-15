@@ -19,42 +19,61 @@ import {
 export type Language = "en" | "rw";
 
 const navigation = [
-  { href: "/", icon: Home, en: "Overview", rw: "Incamake" },
+  {
+    href: "/",
+    icon: Home,
+    en: "Overview",
+    rw: "Incamake",
+    shortEn: "Home",
+    shortRw: "Ahabanza",
+  },
   {
     href: "/data",
     icon: ScanSearch,
     en: "Explore data",
     rw: "Shakisha amakuru",
+    shortEn: "Data",
+    shortRw: "Amakuru",
   },
   {
     href: "/dashboard",
     icon: BarChart3,
     en: "Seasonal picture",
     rw: "Ishusho y’ibihe",
+    shortEn: "Seasons",
+    shortRw: "Ibihe",
   },
   {
     href: "/compare",
     icon: GitCompareArrows,
     en: "Compare districts",
     rw: "Gereranya uturere",
+    shortEn: "Compare",
+    shortRw: "Gereranya",
   },
   {
     href: "/insights",
     icon: Activity,
     en: "Changes & context",
     rw: "Impinduka n’ibisobanuro",
+    shortEn: "Insights",
+    shortRw: "Ibyagaragaye",
   },
   {
     href: "/assistant",
     icon: MessageSquareText,
     en: "Ask AgriLens",
     rw: "Baza AgriLens",
+    shortEn: "Ask AI",
+    shortRw: "Baza AI",
   },
   {
     href: "/about",
     icon: BookOpen,
     en: "Sources & how to read",
     rw: "Inkomoko n’uko wasoma",
+    shortEn: "Sources",
+    shortRw: "Inkomoko",
   },
 ];
 
@@ -86,7 +105,9 @@ export function AppShell({ children, language, onLanguageChange }: Props) {
                 AgriLens <span className="text-primary">AI</span>
               </span>
               <span className="mt-1 hidden text-[9px] font-semibold uppercase tracking-[.12em] text-muted-foreground sm:block">
-                Rwanda · Field intelligence
+                {rw
+                  ? "Rwanda · Isesengura ry’ubuhinzi"
+                  : "Rwanda · Field intelligence"}
               </span>
             </span>
           </Link>
@@ -95,7 +116,7 @@ export function AppShell({ children, language, onLanguageChange }: Props) {
             aria-label={rw ? "Ibyiciro by’ingenzi" : "Primary navigation"}
             className="desktop-navigation mx-2 hidden min-w-0 flex-1 items-center justify-center gap-0.5 overflow-x-auto xl:flex"
           >
-            {navigation.map(({ href, icon: Icon, en, rw: rwLabel }) => {
+            {navigation.map(({ href, en, rw: rwLabel, shortEn, shortRw }) => {
               const active = location === href;
               const label = rw ? rwLabel : en;
               return (
@@ -106,12 +127,9 @@ export function AppShell({ children, language, onLanguageChange }: Props) {
                   title={label}
                   aria-current={active ? "page" : undefined}
                   data-testid={`nav-${href === "/" ? "overview" : href.slice(1)}`}
-                  className={`nav-link group inline-flex min-h-10 shrink-0 items-center justify-center gap-1.5 rounded-full px-2.5 text-[11px] font-semibold transition-all xl:px-3 xl:text-[12px] ${active ? "is-active bg-secondary text-primary" : "text-muted-foreground hover:bg-white/70 hover:text-foreground"}`}
+                  className={`nav-link group inline-flex min-h-10 shrink-0 items-center justify-center rounded-full px-2.5 text-[11px] font-semibold transition-all xl:px-3 xl:text-[12px] ${active ? "is-active bg-secondary text-primary" : "text-muted-foreground hover:bg-white/70 hover:text-foreground"}`}
                 >
-                  <Icon size={14} strokeWidth={active ? 2.1 : 1.8} />
-                  <span className="hidden xl:inline 2xl:text-[12px]">
-                    {label}
-                  </span>
+                  <span>{rw ? shortRw : shortEn}</span>
                 </Link>
               );
             })}
