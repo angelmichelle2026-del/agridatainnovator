@@ -3157,45 +3157,10 @@ export function AssistantPage({ language }: Props) {
 
   return (
     <div className="page-enter">
-      <PageHeading
-        index="05"
-        eyebrow={tx(
-          rw,
-          "AI CHAT · NISR DATA",
-          "IKIGANIRO CYA AI · AMAKURU YA NISR",
-        )}
-        title={tx(rw, "Ask AgriLens", "Baza AgriLens")}
-        description={tx(
-          rw,
-          "Ask in plain English or Kinyarwanda about the NISR snapshot. Answers are grounded in available data, and supported replies link back to their sources.",
-          "Baza mu Cyongereza cyangwa Ikinyarwanda ku makuru ya NISR ari muri sisitemu. Ibisubizo bishingira ku makuru ahari kandi biguhuza n’aho yaturutse.",
-        )}
-      />
       <section
         className="overflow-hidden rounded-2xl border border-border bg-card"
         data-testid="assistant-chat"
       >
-        <div className="flex items-center gap-3 border-b border-border px-5 py-4">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#244636] text-[#d8e3c6]">
-            <Bot size={18} />
-          </span>
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[.14em] text-primary">
-              AGRILENS · DATA ASSISTANT
-            </p>
-            <p className="mt-0.5 text-[11px] text-muted-foreground">
-              {tx(
-                rw,
-                "NISR-backed answers · streaming replies",
-                "Ibisubizo bishingiye kuri NISR · bigaragara ako kanya",
-              )}
-            </p>
-          </div>
-          <span className="ml-auto rounded-full border border-[#cfdbc5] bg-[#eff3e8] px-2.5 py-1 text-[9px] font-bold uppercase tracking-[.1em] text-[#456749]">
-            {tx(rw, "NISR snapshot", "Amakuru ya NISR")}
-          </span>
-        </div>
-
         <div
           className="mx-auto flex max-h-[min(68vh,620px)] min-h-[320px] w-full max-w-[900px] flex-col overflow-y-auto px-4 py-5 sm:px-7"
           role="log"
