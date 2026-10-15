@@ -13,12 +13,12 @@ import {
   LoaderCircle,
   MapPinned,
   Search,
-  Send,
   ShieldCheck,
   Sprout,
   UserRound,
   Wheat,
 } from "lucide-react";
+import { PromptComposer } from "@/components/ui/prompt-composer";
 import {
   Bar,
   BarChart,
@@ -317,16 +317,27 @@ function StatCard({
     </article>
   );
 }
-function compareSeasonNote(current: number, previous: number, unit: string) {
+function compareSeasonNote(
+  current: number,
+  previous: number,
+  unit: string,
+  rw = false,
+) {
   const difference = Number(
     (current - previous).toFixed(unit === "% of farmers" ? 1 : 0),
   );
   const sign = difference > 0 ? "+" : difference < 0 ? "−" : "";
   const amount =
     unit === "% of farmers"
-      ? `${sign}${Math.abs(difference).toFixed(1)} percentage points`
-      : `${sign}${Math.round(Math.abs(difference * 1000)).toLocaleString()} hectares`;
-  return `${amount} vs the same season in 2025`;
+      ? rw
+        ? `${sign}${Math.abs(difference).toFixed(1)} amanota y’ijanisha`
+        : `${sign}${Math.abs(difference).toFixed(1)} percentage points`
+      : rw
+        ? `${sign}${Math.round(Math.abs(difference * 1000)).toLocaleString()} ha`
+        : `${sign}${Math.round(Math.abs(difference * 1000)).toLocaleString()} hectares`;
+  return rw
+    ? `${amount} ugereranyije n’igihembwe nk’iki mu 2025`
+    : `${amount} vs the same season in 2025`;
 }
 
 function NativeSelect({
@@ -402,57 +413,148 @@ export function HomePage({ language }: Props) {
   const latestTag = seasonName(seed.year, seed.season);
   return (
     <div className="page-enter">
-      <section className="hero-meadow shell-grid relative overflow-hidden rounded-[26px] border px-5 py-7 sm:px-9 sm:py-10 lg:px-11 lg:py-12">
-        <div className="pointer-events-none absolute -right-16 -top-28 h-[330px] w-[330px] rounded-full border border-[#d4dbc8] sm:right-12 sm:top-[-180px] sm:h-[480px] sm:w-[480px]" />
-        <div className="hero-copy relative z-[1] max-w-[790px]">
-          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#d9c9de] bg-white/75 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[.12em] text-primary shadow-sm backdrop-blur-sm">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#638052]" />
+      <section className="hero-field relative overflow-hidden rounded-[28px] border px-5 py-7 sm:px-9 sm:py-10 lg:px-11 lg:py-12">
+        <div className="hero-copy relative z-[1]">
+          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[.12em] text-white/90 shadow-sm backdrop-blur-sm">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#3db874] shadow-[0_0_0_3px_rgba(61,184,116,.18)]" />
             {tx(
               rw,
               "NISR survey snapshot · checked 10 Oct 2026",
               "Imibare ya NISR · igenzuwe ku wa 10 Ukwakira 2026",
             )}
           </div>
-          <h1 className="display-font max-w-[740px] text-[37px] font-bold leading-[1.04] tracking-[-.06em] text-[#30263a] sm:text-[56px] lg:text-[64px]">
+          <h1 className="display-font max-w-[740px] text-[37px] font-bold leading-[1.04] tracking-[-.055em] text-white sm:text-[52px] lg:text-[58px]">
             {tx(
               rw,
-              "Start with what the survey says.",
-              "Tangira ku byo ubushakashatsi buvuga.",
+              "See the season. Plan the next step.",
+              "Sobanukirwa n’igihembwe. Tegura intambwe ikurikira.",
             )}
           </h1>
-          <p className="mt-5 max-w-[620px] text-[14px] leading-6 text-[#655d6b] sm:text-[16px] sm:leading-7">
+          <p className="mt-5 max-w-[620px] text-[14px] leading-6 text-white/80 sm:text-[16px] sm:leading-7">
             {tx(
               rw,
-              "A practical starting point for Rwanda’s agriculture planners: explore NISR survey results, compare like-for-like seasons, see crop production across districts, and trace every number to its source.",
-              "Intangiriro ifasha igenamigambi ry’ubuhinzi mu Rwanda: reba ibyatangajwe na NISR, gereranya ibihe bihwanye, urebe umusaruro w’imyaka mu turere, kandi ukurikirane inkomoko ya buri mubare.",
+              "Explore Rwanda’s official agricultural survey results, compare like-for-like seasons and districts, and trace each figure back to its NISR source.",
+              "Reba ibyavuye mu bushakashatsi bwemewe ku buhinzi mu Rwanda, gereranya ibihe n’uturere bihwanye, kandi ukurikire inkomoko ya buri mubare muri NISR.",
             )}
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
             <Link
               href="/dashboard"
-              className="inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-5 text-[12px] font-semibold text-primary-foreground shadow-sm hover:bg-primary/90"
+              className="inline-flex min-h-11 items-center gap-2 rounded-full bg-white px-5 text-[12px] font-semibold text-[#003f82] shadow-sm transition-colors hover:bg-[#eaf4fa]"
               data-testid="link-home-dashboard"
             >
               {tx(
                 rw,
-                "See seasons & crop visuals",
-                "Reba ibihe n’umusaruro w’imyaka",
+                "Explore the latest season",
+                "Reba imibare y’igihembwe giheruka",
               )}
               <ArrowRight size={15} />
             </Link>
             <Link
               href="/compare"
-              className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[#d8c9dd] bg-white/70 px-5 text-[12px] font-semibold text-primary transition-colors hover:bg-white"
+              className="inline-flex min-h-11 items-center gap-2 rounded-full border border-white/35 bg-white/10 px-5 text-[12px] font-semibold text-white transition-colors hover:bg-white/20"
               data-testid="link-home-compare"
             >
-              {tx(rw, "Compare two districts", "Gereranya uturere tubiri")}
+              {tx(rw, "Compare districts", "Gereranya uturere")}
               <GitCompareArrows size={15} />
             </Link>
           </div>
         </div>
-        <div className="relative z-[1] mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-[#d7c9dc] pt-4 text-[10px] font-semibold text-[#6f6574]">
+
+        <aside
+          className="hero-signal relative z-[1]"
+          aria-label={tx(
+            rw,
+            "National improved-seed-use comparison",
+            "Igereranya ry’imikoreshereze y’imbuto z’indobanure ku rwego rw’igihugu",
+          )}
+        >
+          <div className="hero-signal-card p-5 sm:p-6">
+            <div className="relative z-[1] flex items-center justify-between gap-3">
+              <span className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[.12em] text-[#526274]">
+                <Activity size={14} className="text-[#20603d]" />
+                {tx(rw, "A national signal", "Ikimenyetso ku rwego rw’igihugu")}
+              </span>
+              <span className="rounded-full border border-[#e5be01] bg-[#fff8d9] px-2.5 py-1 text-[10px] font-bold text-[#6a5800]">
+                {latestTag}
+              </span>
+            </div>
+            <div className="relative z-[1] mt-6 flex items-end justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-semibold text-[#526274]">
+                  {tx(
+                    rw,
+                    "Farmers using improved seeds",
+                    "Abahinzi bakoresha imbuto z’indobanure",
+                  )}
+                </p>
+                <p className="display-font mt-1 text-[38px] font-bold leading-none tracking-[-.055em] text-[#002a39] sm:text-[44px]">
+                  {displayValue(seed.value, "% of farmers")}
+                </p>
+              </div>
+              <span className="mb-1 rounded-full bg-[#e5f4eb] px-2.5 py-1.5 text-[10px] font-bold leading-4 text-[#143e28]">
+                {compareSeasonNote(
+                  seed.value,
+                  priorSeed.value,
+                  metricDefinitions.improved_seed_use.unit,
+                  rw,
+                )}
+              </span>
+            </div>
+            <div
+              className="relative z-[1] mt-6 space-y-3"
+              role="img"
+              aria-label={tx(
+                rw,
+                `Improved seed use: ${priorSeed.value}% in ${priorSeed.year} Season ${priorSeed.season}, ${seed.value}% in ${seed.year} Season ${seed.season}.`,
+                `Imikoreshereze y’imbuto z’indobanure: ${priorSeed.value}% muri Season ${priorSeed.season} ${priorSeed.year}, na ${seed.value}% muri Season ${seed.season} ${seed.year}.`,
+              )}
+            >
+              <div className="grid grid-cols-[52px_1fr_44px] items-center gap-2.5 text-[10px]">
+                <span className="font-semibold text-[#526274]">
+                  {priorSeed.year} · {priorSeed.season}
+                </span>
+                <span className="hero-bar-track">
+                  <span
+                    className="hero-bar-fill"
+                    style={{ width: `${Math.min(priorSeed.value, 100)}%` }}
+                  />
+                </span>
+                <span className="text-right font-bold tabular-nums text-[#263b49]">
+                  {priorSeed.value}%
+                </span>
+              </div>
+              <div className="grid grid-cols-[52px_1fr_44px] items-center gap-2.5 text-[10px]">
+                <span className="font-semibold text-[#526274]">
+                  {seed.year} · {seed.season}
+                </span>
+                <span className="hero-bar-track">
+                  <span
+                    className="hero-bar-fill hero-bar-fill-current"
+                    style={{ width: `${Math.min(seed.value, 100)}%` }}
+                  />
+                </span>
+                <span className="text-right font-bold tabular-nums text-[#003f82]">
+                  {seed.value}%
+                </span>
+              </div>
+            </div>
+            <div className="relative z-[1] mt-5 flex flex-wrap items-center justify-between gap-2 border-t border-[#dce7ed] pt-3 text-[10px] text-[#526274]">
+              <span>
+                {tx(
+                  rw,
+                  "National estimate · not a district score",
+                  "Ikigereranyo cy’igihugu · si amanota y’akarere",
+                )}
+              </span>
+              <SourceLink sourceId="nisr-sas-2026-season-b" />
+            </div>
+          </div>
+        </aside>
+
+        <div className="relative z-[1] col-span-full flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-white/20 pt-4 text-[10px] font-semibold text-white/75">
           <span className="inline-flex items-center gap-2">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#638052]" />
+            <span className="h-1.5 w-1.5 rounded-full bg-[#3db874]" />
             {tx(
               rw,
               `Latest season in this snapshot: ${latestTag}`,
@@ -462,8 +564,8 @@ export function HomePage({ language }: Props) {
           <span>
             {tx(
               rw,
-              "Independent prototype · not an NISR service",
-              "Prototype yigenga · si serivisi ya NISR",
+              "Independent planning aid · not an NISR service",
+              "Igikoresho cyigenga cy’igenamigambi · si serivisi ya NISR",
             )}
           </span>
         </div>
@@ -473,25 +575,37 @@ export function HomePage({ language }: Props) {
         aria-label="Latest NISR statistics"
       >
         <StatCard
-          label={metricDefinitions.improved_seed_use.label}
+          label={tx(
+            rw,
+            metricDefinitions.improved_seed_use.label,
+            "Abahinzi bakoresha imbuto z’indobanure",
+          )}
           value={displayValue(seed.value, "% of farmers")}
-          note={`${latestTag} · ${compareSeasonNote(seed.value, priorSeed.value, metricDefinitions.improved_seed_use.unit)}`}
+          note={`${latestTag} · ${compareSeasonNote(seed.value, priorSeed.value, metricDefinitions.improved_seed_use.unit, rw)}`}
           icon={Sprout}
         />
         <StatCard
-          label={metricDefinitions.organic_fertilizer_use.label}
+          label={tx(
+            rw,
+            metricDefinitions.organic_fertilizer_use.label,
+            "Abahinzi bakoresha ifumbire y’imborera",
+          )}
           value={displayValue(organic.value, "% of farmers")}
-          note={`${latestTag} · ${compareSeasonNote(organic.value, priorOrganic.value, metricDefinitions.organic_fertilizer_use.unit)}`}
+          note={`${latestTag} · ${compareSeasonNote(organic.value, priorOrganic.value, metricDefinitions.organic_fertilizer_use.unit, rw)}`}
           icon={Leaf}
         />
         <StatCard
-          label={metricDefinitions.agricultural_land.label}
+          label={tx(
+            rw,
+            metricDefinitions.agricultural_land.label,
+            "Ubutaka bukoreshwa mu buhinzi",
+          )}
           value={`${(land.value / 1000).toFixed(3)}m ha`}
-          note={`${latestTag} · ${compareSeasonNote(land.value, priorLand.value, metricDefinitions.agricultural_land.unit)}`}
+          note={`${latestTag} · ${compareSeasonNote(land.value, priorLand.value, metricDefinitions.agricultural_land.unit, rw)}`}
           icon={MapPinned}
         />
       </section>
-      <section className="mt-7 grid gap-4 lg:grid-cols-[1fr_310px]">
+      <section className="mt-7">
         <article className="rounded-xl border border-border bg-card p-5 sm:p-6">
           <div className="flex items-center gap-2 text-primary">
             <Activity size={16} />
@@ -517,26 +631,103 @@ export function HomePage({ language }: Props) {
             <SourceLink sourceId="nisr-sas-2026-season-b" />
           </p>
         </article>
-        <aside className="rounded-xl bg-[#244636] p-5 text-[#f2f1e7]">
-          <BookOpenCheck size={18} className="text-[#c3d79d]" />
-          <h2 className="display-font mt-4 text-[18px] font-bold">
-            {tx(rw, "Where to go next", "Aho wakomereza")}
-          </h2>
-          <p className="mt-2 text-[11px] leading-[1.75] text-white/70">
+      </section>
+      <section className="mt-8" aria-labelledby="planner-pathways-title">
+        <div className="mb-4">
+          <p className="text-[10px] font-bold uppercase tracking-[.14em] text-primary">
+            {tx(rw, "Put the data to work", "Koresha amakuru mu igenamigambi")}
+          </p>
+          <h2
+            id="planner-pathways-title"
+            className="display-font mt-1 text-[21px] font-bold tracking-[-.035em] text-foreground sm:text-[24px]"
+          >
             {tx(
               rw,
-              "Check the full table, compare two districts, or open the NISR sources before you use a figure in a brief.",
-              "Reba imbonerahamwe yose, gereranya uturere tubiri, cyangwa ufungure inkomoko mbere yo gusubiramo umubare.",
+              "What would you like to explore?",
+              "Ni iki wifuza gushakisha?",
             )}
-          </p>
+          </h2>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           <Link
             href="/data"
-            className="mt-4 inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#d5e3bb] hover:text-white"
+            className="planner-path-card group rounded-2xl border border-border bg-card p-5 shadow-sm"
+            data-testid="link-home-data"
           >
-            {tx(rw, "Explore all data", "Shakisha amakuru yose")}
-            <ArrowRight size={13} />
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e7f1f8] text-[#005cab]">
+              <Search size={18} />
+            </span>
+            <h3 className="display-font mt-4 text-[16px] font-bold text-foreground">
+              {tx(rw, "Browse NISR tables", "Reba imbonerahamwe za NISR")}
+            </h3>
+            <p className="mt-2 min-h-10 text-[12px] leading-5 text-muted-foreground">
+              {tx(
+                rw,
+                "Filter observations, seasons and district measures, then export the rows you need.",
+                "Shakisha ibipimo, ibihe n’amakuru y’uturere, hanyuma ukurure ibisubizo ukeneye.",
+              )}
+            </p>
+            <span className="mt-4 inline-flex items-center gap-1.5 text-[11px] font-bold text-primary">
+              {tx(rw, "Explore data", "Shakisha amakuru")}
+              <ArrowRight
+                size={13}
+                className="transition-transform group-hover:translate-x-1"
+              />
+            </span>
           </Link>
-        </aside>
+          <Link
+            href="/compare"
+            className="planner-path-card group rounded-2xl border border-border bg-card p-5 shadow-sm"
+            data-testid="link-home-compare-card"
+          >
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e7f1f8] text-[#005cab]">
+              <GitCompareArrows size={18} />
+            </span>
+            <h3 className="display-font mt-4 text-[16px] font-bold text-foreground">
+              {tx(rw, "Compare districts", "Gereranya uturere")}
+            </h3>
+            <p className="mt-2 min-h-10 text-[12px] leading-5 text-muted-foreground">
+              {tx(
+                rw,
+                "Review available measures side by side and open the source behind each figure.",
+                "Gereranya ibipimo bihari kandi ufungure inkomoko ya buri mubare.",
+              )}
+            </p>
+            <span className="mt-4 inline-flex items-center gap-1.5 text-[11px] font-bold text-primary">
+              {tx(rw, "Start a comparison", "Tangira igereranya")}
+              <ArrowRight
+                size={13}
+                className="transition-transform group-hover:translate-x-1"
+              />
+            </span>
+          </Link>
+          <Link
+            href="/assistant"
+            className="planner-path-card group rounded-2xl border border-border bg-card p-5 shadow-sm"
+            data-testid="link-home-assistant"
+          >
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e5f4eb] text-[#20603d]">
+              <Bot size={18} />
+            </span>
+            <h3 className="display-font mt-4 text-[16px] font-bold text-foreground">
+              {tx(rw, "Ask AgriLens", "Baza AgriLens")}
+            </h3>
+            <p className="mt-2 min-h-10 text-[12px] leading-5 text-muted-foreground">
+              {tx(
+                rw,
+                "Ask in English or Kinyarwanda and follow the NISR evidence behind the answer.",
+                "Baza mu Cyongereza cyangwa Ikinyarwanda, ukurikire ibimenyetso bya NISR biri inyuma y’igisubizo.",
+              )}
+            </p>
+            <span className="mt-4 inline-flex items-center gap-1.5 text-[11px] font-bold text-primary">
+              {tx(rw, "Open the assistant", "Fungura umufasha")}
+              <ArrowRight
+                size={13}
+                className="transition-transform group-hover:translate-x-1"
+              />
+            </span>
+          </Link>
+        </div>
       </section>
       <div className="mt-6">
         <SourceNote>
@@ -592,11 +783,77 @@ export function DataPage({ language }: Props) {
   const [metric, setMetric] = useState("improved_seed_use");
   const [season, setSeason] = useState("ALL");
   const [query, setQuery] = useState("");
+  type CatalogResult = {
+    id: string;
+    kind: string;
+    title: string;
+    excerpt: string;
+    period?: string;
+    location?: string;
+    sourceId: string;
+    sourceTitle: string;
+  };
+  const [catalogQuery, setCatalogQuery] = useState("");
+  const [catalogResults, setCatalogResults] = useState<CatalogResult[]>([]);
+  const [catalogSearchState, setCatalogSearchState] = useState<
+    "idle" | "loading" | "done" | "error"
+  >("idle");
+  const [catalogSearchError, setCatalogSearchError] = useState("");
   const [workbookTableId, setWorkbookTableId] = useState("table-06");
   const [workbookTables, setWorkbookTables] = useState<WorkbookTable[]>([]);
   const [workbookLoadStatus, setWorkbookLoadStatus] = useState<
     "idle" | "loading" | "ready" | "error"
   >("idle");
+  async function searchCatalog(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const searchTerm = catalogQuery.trim();
+    if (!searchTerm || catalogSearchState === "loading") return;
+    setCatalogSearchState("loading");
+    setCatalogSearchError("");
+    try {
+      const response = await fetch(
+        `/api/search?q=${encodeURIComponent(searchTerm)}&limit=6`,
+      );
+      const payload = (await response.json().catch(() => null)) as {
+        error?: unknown;
+        results?: unknown;
+      } | null;
+      if (!response.ok) {
+        throw new Error(
+          typeof payload?.error === "string"
+            ? payload.error
+            : tx(
+                rw,
+                "NISR search could not be completed. Please try again.",
+                "Gushakisha muri NISR ntibyashobotse. Ongera ugerageze.",
+              ),
+        );
+      }
+      const hits = Array.isArray(payload?.results)
+        ? payload.results.filter(
+            (result): result is CatalogResult =>
+              Boolean(result) &&
+              typeof result === "object" &&
+              typeof (result as CatalogResult).title === "string" &&
+              typeof (result as CatalogResult).sourceId === "string",
+          )
+        : [];
+      setCatalogResults(hits);
+      setCatalogSearchState("done");
+    } catch (error) {
+      setCatalogResults([]);
+      setCatalogSearchError(
+        error instanceof Error && error.message
+          ? error.message
+          : tx(
+              rw,
+              "NISR search could not be completed. Please try again.",
+              "Gushakisha muri NISR ntibyashobotse. Ongera ugerageze.",
+            ),
+      );
+      setCatalogSearchState("error");
+    }
+  }
   const loadWorkbookTables = () => {
     if (workbookLoadStatus === "loading" || workbookLoadStatus === "ready")
       return;
@@ -738,6 +995,151 @@ export function DataPage({ language }: Props) {
           "Hitamo igipimo urebe seasons zose ziri muri iyi mibare ya NISR. Shakisha umwaka cyangwa akarere, hanyuma ukurure ibisubizo bigaragara.",
         )}
       />
+      <section
+        className="mb-6 overflow-hidden rounded-2xl border border-border bg-card shadow-sm"
+        data-testid="data-catalog-search"
+        aria-labelledby="data-catalog-search-title"
+      >
+        <div className="flex flex-col gap-4 bg-gradient-to-r from-[#e8f3f7] via-background to-[#edf5ee] px-4 py-4 sm:px-5 md:flex-row md:items-end md:justify-between">
+          <div className="flex min-w-0 items-start gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-primary shadow-sm">
+              <Search size={18} />
+            </span>
+            <div className="min-w-0">
+              <p className="text-[9px] font-bold uppercase tracking-[.14em] text-primary">
+                {tx(rw, "NISR SOURCE FINDER", "SHAKISHA INKOMOKO ZA NISR")}
+              </p>
+              <h2
+                id="data-catalog-search-title"
+                className="display-font mt-1 text-[16px] font-bold tracking-[-.025em] text-foreground"
+              >
+                {tx(
+                  rw,
+                  "Search across NISR data",
+                  "Shakisha mu makuru ya NISR",
+                )}
+              </h2>
+              <p className="mt-1 max-w-[620px] text-[11px] leading-5 text-muted-foreground">
+                {tx(
+                  rw,
+                  "Find crop measures, districts, periods and source tables across the snapshot. Use the filters below to narrow the table you are viewing.",
+                  "Shakisha ibipimo by’ibihingwa, uturere, ibihe n’amasoko muri iyi mibare. Koresha amahitamo ari hasi kugira ngo ugabanye imbonerahamwe ureba.",
+                )}
+              </p>
+            </div>
+          </div>
+          <form
+            onSubmit={searchCatalog}
+            className="flex w-full items-center gap-2 md:max-w-[460px]"
+            data-testid="data-catalog-search-form"
+          >
+            <label htmlFor="data-catalog-search-input" className="sr-only">
+              {tx(rw, "Search NISR records", "Shakisha inyandiko za NISR")}
+            </label>
+            <div className="flex h-11 min-w-0 flex-1 items-center gap-2 rounded-xl border border-border bg-background px-3 shadow-sm focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/10">
+              <Search size={15} className="shrink-0 text-muted-foreground" />
+              <input
+                id="data-catalog-search-input"
+                value={catalogQuery}
+                onChange={(event) => setCatalogQuery(event.target.value)}
+                maxLength={240}
+                placeholder={tx(
+                  rw,
+                  "Maize, Nyagatare, 2026A…",
+                  "Ibigori, Nyagatare, 2026A…",
+                )}
+                className="min-w-0 flex-1 bg-transparent py-2 text-[11px] outline-none placeholder:text-muted-foreground/80"
+                data-testid="data-catalog-search-input"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={
+                catalogSearchState === "loading" || !catalogQuery.trim()
+              }
+              className="inline-flex h-11 shrink-0 items-center gap-2 rounded-xl bg-primary px-3.5 text-[10px] font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-45"
+              data-testid="data-catalog-search-submit"
+            >
+              {catalogSearchState === "loading" ? (
+                <LoaderCircle size={13} className="animate-spin" />
+              ) : (
+                <Search size={13} />
+              )}
+              <span>{tx(rw, "Search", "Shakisha")}</span>
+            </button>
+          </form>
+        </div>
+        {catalogSearchError && (
+          <p
+            className="px-4 py-3 text-[11px] text-destructive sm:px-5"
+            role="alert"
+          >
+            {catalogSearchError}
+          </p>
+        )}
+        {catalogSearchState === "done" && catalogResults.length === 0 && (
+          <p
+            className="px-4 py-3 text-[11px] text-muted-foreground sm:px-5"
+            role="status"
+          >
+            {tx(
+              rw,
+              "No matching records found. Try a crop, district, indicator or season.",
+              "Nta nyandiko zijyanye n’icyo washakishije. Gerageza igihingwa, akarere, igipimo cyangwa igihembwe.",
+            )}
+          </p>
+        )}
+        {catalogResults.length > 0 && (
+          <div
+            className="grid gap-2 border-t border-border/70 p-4 sm:grid-cols-2 sm:p-5"
+            aria-live="polite"
+            data-testid="data-catalog-search-results"
+          >
+            {catalogResults.map((result) => {
+              const askQuestion = `${result.title}${result.period ? ` (${result.period})` : ""}. Explain what this NISR record shows and its planning relevance.`;
+              const askHref = `/assistant?question=${encodeURIComponent(askQuestion)}`;
+              return (
+                <article
+                  key={result.id}
+                  className="min-w-0 rounded-xl border border-border/80 bg-background p-3.5 transition-colors hover:border-primary/25"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="line-clamp-2 text-[11px] font-semibold leading-4">
+                      {result.title}
+                    </p>
+                    <span className="shrink-0 rounded-full bg-[#e8f3f7] px-2 py-0.5 text-[8px] font-bold uppercase tracking-wide text-[#005cab]">
+                      {searchResultKindLabel(result.kind, rw)}
+                    </span>
+                  </div>
+                  <p className="mt-1 line-clamp-2 text-[10px] leading-4 text-muted-foreground">
+                    {result.excerpt}
+                  </p>
+                  <div className="mt-2 flex flex-wrap items-center justify-between gap-2 border-t border-border/70 pt-2">
+                    <span className="text-[9px] text-muted-foreground">
+                      {[result.location, result.period]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </span>
+                    <div className="flex items-center gap-3">
+                      <SourceLink
+                        sourceId={result.sourceId}
+                        label={result.sourceTitle}
+                      />
+                      <Link
+                        href={askHref}
+                        className="text-[9px] font-semibold text-primary hover:underline"
+                        data-testid="data-catalog-ask-link"
+                      >
+                        {tx(rw, "Ask AgriLens", "Baza AgriLens")}
+                      </Link>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </section>
       <div
         className="mb-5 flex flex-wrap gap-2"
         role="tablist"
@@ -1219,7 +1621,7 @@ export function DashboardPage({ language }: Props) {
             key={metric}
             label={metricDefinitions[metric].label}
             value={displayValue(value.value, metricDefinitions[metric].unit)}
-            note={`${seasonName(value.year, value.season)} · ${prior ? compareSeasonNote(value.value, prior.value, metricDefinitions[metric].unit) : "No matched earlier season is included in this snapshot"}`}
+            note={`${seasonName(value.year, value.season)} · ${prior ? compareSeasonNote(value.value, prior.value, metricDefinitions[metric].unit, rw) : tx(rw, "No matched earlier season is included in this snapshot", "Nta gihembwe cyabanje gihwanye kiri muri iyi mibare")}`}
             icon={[Sprout, Leaf, Wheat, Activity][index]}
           />
         ))}
@@ -2509,27 +2911,17 @@ export function AssistantPage({ language }: Props) {
       | "revising"
       | "answering";
   };
-  type CatalogResult = {
-    id: string;
-    kind: string;
-    title: string;
-    excerpt: string;
-    period?: string;
-    location?: string;
-    sourceId: string;
-    sourceTitle: string;
-    sourceUrl: string;
-  };
   const rw = isRw(language);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return (
+      new URLSearchParams(window.location.search)
+        .get("question")
+        ?.slice(0, 2000) ?? ""
+    );
+  });
   const [isSending, setIsSending] = useState(false);
-  const [catalogQuery, setCatalogQuery] = useState("");
-  const [catalogResults, setCatalogResults] = useState<CatalogResult[]>([]);
-  const [catalogSearchState, setCatalogSearchState] = useState<
-    "idle" | "loading" | "done" | "error"
-  >("idle");
-  const [catalogSearchError, setCatalogSearchError] = useState("");
   const chatEndRef = useRef<HTMLDivElement>(null);
   const suggestedQuestions = [
     tx(
@@ -2548,49 +2940,6 @@ export function AssistantPage({ language }: Props) {
       "Ni akahe karere katanze umusaruro w’ibigori mwinshi muri Season A 2026?",
     ),
   ];
-
-  async function searchCatalog(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const query = catalogQuery.trim();
-    if (!query || catalogSearchState === "loading") return;
-    setCatalogSearchState("loading");
-    setCatalogSearchError("");
-    try {
-      const response = await fetch(
-        `/api/search?q=${encodeURIComponent(query)}&limit=6`,
-      );
-      const payload = (await response.json().catch(() => null)) as {
-        error?: unknown;
-        results?: unknown;
-      } | null;
-      if (!response.ok) {
-        throw new Error(
-          typeof payload?.error === "string"
-            ? payload.error
-            : "The NISR search could not be completed. Please try again.",
-        );
-      }
-      const hits = Array.isArray(payload?.results)
-        ? payload.results.filter(
-            (result): result is CatalogResult =>
-              Boolean(result) &&
-              typeof result === "object" &&
-              typeof (result as CatalogResult).title === "string" &&
-              typeof (result as CatalogResult).sourceId === "string",
-          )
-        : [];
-      setCatalogResults(hits);
-      setCatalogSearchState("done");
-    } catch (error) {
-      setCatalogResults([]);
-      setCatalogSearchError(
-        error instanceof Error && error.message
-          ? error.message
-          : "The NISR search could not be completed. Please try again.",
-      );
-      setCatalogSearchState("error");
-    }
-  }
 
   useEffect(() => {
     if (messages.length === 0) return;
@@ -2743,11 +3092,6 @@ export function AssistantPage({ language }: Props) {
     }
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    void sendMessage(input);
-  }
-
   function activityLabel(status?: ChatMessage["status"]) {
     if (status === "calculating") {
       return tx(
@@ -2852,120 +3196,6 @@ export function AssistantPage({ language }: Props) {
           </span>
         </div>
 
-        <div className="border-b border-border bg-[#faf9f4] px-4 py-3 sm:px-5">
-          <form
-            onSubmit={searchCatalog}
-            className="mx-auto flex w-full max-w-[900px] items-center gap-2"
-            data-testid="assistant-search-form"
-          >
-            <label htmlFor="assistant-catalog-search" className="sr-only">
-              {tx(rw, "Search the NISR snapshot", "Shakisha mu makuru ya NISR")}
-            </label>
-            <div className="flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-xl border border-border bg-background px-3">
-              <Search size={15} className="shrink-0 text-muted-foreground" />
-              <input
-                id="assistant-catalog-search"
-                value={catalogQuery}
-                onChange={(event) => setCatalogQuery(event.target.value)}
-                maxLength={240}
-                placeholder={tx(
-                  rw,
-                  "Search crops, indicators, districts or tables…",
-                  "Shakisha ibihingwa, ibipimo, uturere cyangwa imbonerahamwe…",
-                )}
-                className="min-w-0 flex-1 bg-transparent py-2 text-[11px] outline-none placeholder:text-muted-foreground/80"
-                data-testid="assistant-search-input"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={
-                catalogSearchState === "loading" || !catalogQuery.trim()
-              }
-              className="inline-flex h-11 shrink-0 items-center gap-2 rounded-xl bg-[#244636] px-3.5 text-[10px] font-semibold text-white transition hover:bg-[#315f47] disabled:cursor-not-allowed disabled:opacity-45"
-              data-testid="assistant-search-submit"
-            >
-              {catalogSearchState === "loading" ? (
-                <LoaderCircle size={13} className="animate-spin" />
-              ) : (
-                <Search size={13} />
-              )}
-              {tx(rw, "Search data", "Shakisha")}
-            </button>
-          </form>
-          {catalogSearchState === "error" && (
-            <p
-              className="mx-auto mt-2 max-w-[900px] text-[10px] text-destructive"
-              role="alert"
-            >
-              {catalogSearchError}
-            </p>
-          )}
-          {catalogSearchState === "done" && catalogResults.length === 0 && (
-            <p
-              className="mx-auto mt-2 max-w-[900px] text-[10px] text-muted-foreground"
-              role="status"
-            >
-              {tx(
-                rw,
-                "No matching records found. Try a crop, district, indicator or season.",
-                "Nta nyandiko zijyanye n’icyo washakishije. Gerageza igihingwa, akarere, igipimo cyangwa igihembwe.",
-              )}
-            </p>
-          )}
-          {catalogResults.length > 0 && (
-            <div
-              className="mx-auto mt-3 grid w-full max-w-[900px] gap-2 sm:grid-cols-2"
-              aria-live="polite"
-              data-testid="assistant-search-results"
-            >
-              {catalogResults.map((result) => (
-                <article
-                  key={result.id}
-                  className="min-w-0 rounded-xl border border-border/80 bg-background p-3"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="line-clamp-2 text-[11px] font-semibold leading-4">
-                      {result.title}
-                    </p>
-                    <span className="shrink-0 rounded-full bg-[#eff3e8] px-2 py-0.5 text-[8px] font-bold uppercase tracking-wide text-[#456749]">
-                      {searchResultKindLabel(result.kind, rw)}
-                    </span>
-                  </div>
-                  <p className="mt-1 line-clamp-2 text-[9px] leading-4 text-muted-foreground">
-                    {result.excerpt}
-                  </p>
-                  <div className="mt-2 flex flex-wrap items-center justify-between gap-2 border-t border-border/70 pt-2">
-                    <span className="text-[9px] text-muted-foreground">
-                      {[result.location, result.period]
-                        .filter(Boolean)
-                        .join(" · ")}
-                    </span>
-                    <div className="flex items-center gap-3">
-                      <SourceLink
-                        sourceId={result.sourceId}
-                        label={result.sourceTitle}
-                      />
-                      <button
-                        type="button"
-                        disabled={isSending}
-                        onClick={() =>
-                          void sendMessage(
-                            `${result.title}${result.period ? ` (${result.period})` : ""}. Explain what this NISR record shows and its planning relevance.`,
-                          )
-                        }
-                        className="text-[9px] font-semibold text-primary hover:underline disabled:opacity-50"
-                      >
-                        {tx(rw, "Ask AgriLens", "Baza AgriLens")}
-                      </button>
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
-          )}
-        </div>
-
         <div
           className="mx-auto flex max-h-[min(68vh,620px)] min-h-[320px] w-full max-w-[900px] flex-col overflow-y-auto px-4 py-5 sm:px-7"
           role="log"
@@ -3064,45 +3294,36 @@ export function AssistantPage({ language }: Props) {
           <div ref={chatEndRef} />
         </div>
 
-        <form
-          onSubmit={handleSubmit}
-          className="mx-auto flex w-full max-w-[900px] items-end gap-2 border-t border-border px-4 py-4 sm:px-7"
-          data-testid="assistant-chat-form"
-        >
-          <textarea
+        <div className="mx-auto w-full max-w-[900px] border-t border-border px-4 py-4 sm:px-7">
+          <PromptComposer
             value={input}
-            onChange={(event) => setInput(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" && !event.shiftKey) {
-                event.preventDefault();
-                void sendMessage(input);
-              }
-            }}
-            maxLength={2000}
-            rows={2}
+            onChange={setInput}
+            onSend={() => void sendMessage(input)}
+            isSending={isSending}
             placeholder={tx(
               rw,
               "Ask about the NISR data… (Enter to send)",
               "Baza ku makuru ya NISR… (Kanda Enter wohereze)",
             )}
-            aria-label={tx(rw, "Your message", "Ubutumwa bwawe")}
-            className="min-h-[48px] max-h-[140px] flex-1 resize-y rounded-xl border border-border bg-background px-3.5 py-3 text-[12px] leading-5 outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-primary/10"
-            data-testid="assistant-input"
-          />
-          <button
-            type="submit"
-            disabled={isSending || !input.trim()}
-            aria-label={tx(rw, "Send message", "Ohereza ubutumwa")}
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#244636] text-white transition hover:bg-[#315f47] disabled:cursor-not-allowed disabled:opacity-45"
-            data-testid="assistant-send"
-          >
-            {isSending ? (
-              <LoaderCircle size={17} className="animate-spin" />
-            ) : (
-              <Send size={16} />
+            label={tx(rw, "Your message", "Ubutumwa bwawe")}
+            sendLabel={tx(rw, "Send message", "Ohereza ubutumwa")}
+            sendingLabel={tx(
+              rw,
+              "Sending message",
+              "Ubutumwa burimo koherezwa",
             )}
-          </button>
-        </form>
+            evidenceLabel={tx(
+              rw,
+              "NISR evidence · check sources",
+              "Ibimenyetso bya NISR · genzura inkomoko",
+            )}
+            characterCountLabel={tx(
+              rw,
+              `${input.length} of 2,000 characters`,
+              `${input.length} mu nyuguti 2,000`,
+            )}
+          />
+        </div>
       </section>
       <div className="mt-5">
         <SourceNote>
