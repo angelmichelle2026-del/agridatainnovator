@@ -191,19 +191,23 @@ export function AppShell({ children, language, onLanguageChange }: Props) {
           })}
         </nav>
 
-        <div className="hidden border-t border-border/45 xl:block">
-          <div className="mx-auto flex h-8 max-w-[1600px] items-center gap-2 px-10 text-[10px] text-muted-foreground 2xl:px-12">
-            <Command size={13} />
-            <span>
-              {rw ? "Igenamigambi ry’ubuhinzi" : "Rwanda agriculture planning"}
-            </span>
-            <span className="text-border">/</span>
-            <span className="font-semibold text-foreground">
-              {currentPage?.[rw ? "rw" : "en"] ??
-                (rw ? "Ntiboneka" : "Not found")}
-            </span>
+        {location !== "/assistant" && (
+          <div className="hidden border-t border-border/45 xl:block">
+            <div className="mx-auto flex h-8 max-w-[1600px] items-center gap-2 px-10 text-[10px] text-muted-foreground 2xl:px-12">
+              <Command size={13} />
+              <span>
+                {rw
+                  ? "Igenamigambi ry’ubuhinzi"
+                  : "Rwanda agriculture planning"}
+              </span>
+              <span className="text-border">/</span>
+              <span className="font-semibold text-foreground">
+                {currentPage?.[rw ? "rw" : "en"] ??
+                  (rw ? "Ntiboneka" : "Not found")}
+              </span>
+            </div>
           </div>
-        </div>
+        )}
       </header>
 
       <main className="mx-auto min-h-[calc(100dvh-110px)] max-w-[1600px] px-4 pb-14 pt-6 sm:px-7 sm:pt-8 xl:px-10 xl:pt-9 2xl:px-12">
