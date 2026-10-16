@@ -415,7 +415,7 @@ export function HomePage({ language }: Props) {
     <div className="page-enter">
       <section className="hero-field relative overflow-hidden rounded-[28px] border px-5 py-7 sm:px-9 sm:py-10 lg:px-11 lg:py-12">
         <div className="hero-copy relative z-[1]">
-          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[.12em] text-white/90 shadow-sm backdrop-blur-sm">
+          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#d9c5dc] bg-white/65 px-3 py-1.5 text-[8px] font-bold uppercase tracking-[.08em] text-[#56465f] shadow-sm backdrop-blur-sm sm:text-[10px] sm:tracking-[.12em]">
             <span className="h-1.5 w-1.5 rounded-full bg-[#3db874] shadow-[0_0_0_3px_rgba(61,184,116,.18)]" />
             {tx(
               rw,
@@ -423,14 +423,14 @@ export function HomePage({ language }: Props) {
               "Imibare ya NISR · igenzuwe ku wa 10 Ukwakira 2026",
             )}
           </div>
-          <h1 className="display-font max-w-[740px] text-[37px] font-bold leading-[1.04] tracking-[-.055em] text-white sm:text-[52px] lg:text-[58px]">
+          <h1 className="display-font max-w-[740px] text-[38px] font-bold leading-[1.04] tracking-[-.055em] text-[#203345] sm:text-[54px] lg:text-[64px]">
             {tx(
               rw,
               "See the season. Plan the next step.",
               "Sobanukirwa n’igihembwe. Tegura intambwe ikurikira.",
             )}
           </h1>
-          <p className="mt-5 max-w-[620px] text-[14px] leading-6 text-white/80 sm:text-[16px] sm:leading-7">
+          <p className="mt-5 max-w-[620px] text-[14px] leading-6 text-[#51616c] sm:text-[16px] sm:leading-7">
             {tx(
               rw,
               "Explore Rwanda’s official agricultural survey results, compare like-for-like seasons and districts, and trace each figure back to its NISR source.",
@@ -440,7 +440,7 @@ export function HomePage({ language }: Props) {
           <div className="mt-7 flex flex-wrap gap-3">
             <Link
               href="/dashboard"
-              className="inline-flex min-h-11 items-center gap-2 rounded-full bg-white px-5 text-[12px] font-semibold text-[#003f82] shadow-sm transition-colors hover:bg-[#eaf4fa]"
+              className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[#005cab] px-5 text-[12px] font-semibold text-white shadow-[0_8px_20px_-12px_rgba(0,92,171,.75)] transition-all hover:-translate-y-0.5 hover:bg-[#004b8a]"
               data-testid="link-home-dashboard"
             >
               {tx(
@@ -452,7 +452,7 @@ export function HomePage({ language }: Props) {
             </Link>
             <Link
               href="/compare"
-              className="inline-flex min-h-11 items-center gap-2 rounded-full border border-white/35 bg-white/10 px-5 text-[12px] font-semibold text-white transition-colors hover:bg-white/20"
+              className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[#b9cbbf] bg-white/55 px-5 text-[12px] font-semibold text-[#2b4652] transition-all hover:-translate-y-0.5 hover:border-[#72957b] hover:bg-white/85"
               data-testid="link-home-compare"
             >
               {tx(rw, "Compare districts", "Gereranya uturere")}
@@ -552,7 +552,7 @@ export function HomePage({ language }: Props) {
           </div>
         </aside>
 
-        <div className="relative z-[1] col-span-full flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-white/20 pt-4 text-[10px] font-semibold text-white/75">
+        <div className="relative z-[1] col-span-full flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-[#d7cddd] pt-4 text-[10px] font-semibold text-[#52636d]">
           <span className="inline-flex items-center gap-2">
             <span className="h-1.5 w-1.5 rounded-full bg-[#3db874]" />
             {tx(
@@ -651,10 +651,10 @@ export function HomePage({ language }: Props) {
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           <Link
             href="/data"
-            className="planner-path-card group rounded-2xl border border-border bg-card p-5 shadow-sm"
+            className="planner-path-card planner-path-card-data group rounded-2xl border border-border bg-card p-5 shadow-sm"
             data-testid="link-home-data"
           >
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e7f1f8] text-[#005cab]">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#eee5f5] text-[#74518d]">
               <Search size={18} />
             </span>
             <h3 className="display-font mt-4 text-[16px] font-bold text-foreground">
@@ -677,10 +677,10 @@ export function HomePage({ language }: Props) {
           </Link>
           <Link
             href="/compare"
-            className="planner-path-card group rounded-2xl border border-border bg-card p-5 shadow-sm"
+            className="planner-path-card planner-path-card-compare group rounded-2xl border border-border bg-card p-5 shadow-sm"
             data-testid="link-home-compare-card"
           >
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e7f1f8] text-[#005cab]">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f7e2e7] text-[#a24560]">
               <GitCompareArrows size={18} />
             </span>
             <h3 className="display-font mt-4 text-[16px] font-bold text-foreground">
@@ -703,7 +703,7 @@ export function HomePage({ language }: Props) {
           </Link>
           <Link
             href="/assistant"
-            className="planner-path-card group rounded-2xl border border-border bg-card p-5 shadow-sm"
+            className="planner-path-card planner-path-card-assistant group rounded-2xl border border-border bg-card p-5 shadow-sm"
             data-testid="link-home-assistant"
           >
             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e5f4eb] text-[#20603d]">
