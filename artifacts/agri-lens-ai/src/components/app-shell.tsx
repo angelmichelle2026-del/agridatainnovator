@@ -2,18 +2,14 @@ import { type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import {
   Activity,
-  ArrowUpRight,
   BarChart3,
   BookOpen,
-  CircleHelp,
-  Command,
   GitCompareArrows,
   Home,
   Languages,
   Leaf,
   MessageSquareText,
   ScanSearch,
-  ShieldCheck,
 } from "lucide-react";
 
 export type Language = "en" | "rw";
@@ -22,8 +18,8 @@ const navigation = [
   {
     href: "/",
     icon: Home,
-    en: "Overview",
-    rw: "Incamake",
+    en: "Home",
+    rw: "Ahabanza",
     shortEn: "Home",
     shortRw: "Ahabanza",
   },
@@ -70,8 +66,8 @@ const navigation = [
   {
     href: "/about",
     icon: BookOpen,
-    en: "Sources & how to read",
-    rw: "Inkomoko n’uko wasoma",
+    en: "Sources",
+    rw: "Inkomoko",
     shortEn: "Sources",
     shortRw: "Inkomoko",
   },
@@ -86,7 +82,6 @@ type Props = {
 export function AppShell({ children, language, onLanguageChange }: Props) {
   const [location] = useLocation();
   const rw = language === "rw";
-  const currentPage = navigation.find((item) => item.href === location);
 
   return (
     <div className="grain app-frame min-h-[100dvh] bg-background text-foreground">
@@ -136,10 +131,6 @@ export function AppShell({ children, language, onLanguageChange }: Props) {
           </nav>
 
           <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3 lg:ml-0">
-            <span className="hidden items-center gap-1.5 rounded-full border border-[#d8e2d5] bg-[#f1f6ef] px-2.5 py-1.5 text-[9px] font-bold uppercase tracking-[.07em] text-[#49664f] xl:inline-flex">
-              <span className="status-dot h-1.5 w-1.5 rounded-full bg-[#72957b]" />
-              {rw ? "amakuru" : "NISR snapshot"}
-            </span>
             <div
               className="language-switch flex items-center gap-0.5 rounded-full border border-border/80 bg-white/80 p-1 shadow-sm"
               role="group"
@@ -190,55 +181,10 @@ export function AppShell({ children, language, onLanguageChange }: Props) {
             );
           })}
         </nav>
-
-        {location !== "/assistant" && (
-          <div className="hidden border-t border-border/45 xl:block">
-            <div className="mx-auto flex h-8 max-w-[1600px] items-center gap-2 px-10 text-[10px] text-muted-foreground 2xl:px-12">
-              <Command size={13} />
-              <span>
-                {rw
-                  ? "Igenamigambi ry’ubuhinzi"
-                  : "Rwanda agriculture planning"}
-              </span>
-              <span className="text-border">/</span>
-              <span className="font-semibold text-foreground">
-                {currentPage?.[rw ? "rw" : "en"] ??
-                  (rw ? "Ntiboneka" : "Not found")}
-              </span>
-            </div>
-          </div>
-        )}
       </header>
 
       <main className="mx-auto min-h-[calc(100dvh-110px)] max-w-[1600px] px-4 pb-14 pt-6 sm:px-7 sm:pt-8 xl:px-10 xl:pt-9 2xl:px-12">
         {children}
-        <footer className="app-footer mt-14 flex flex-col gap-3 border-t border-border/80 pt-5 text-[11px] leading-5 text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-secondary text-primary">
-              <Leaf size={14} />
-            </span>
-            <span>
-              {rw
-                ? "AgriLens AI ni prototype yigenga yo gufasha igenamigambi ry’ubuhinzi."
-                : "AgriLens AI is an independent prototype for agricultural planning."}
-            </span>
-          </div>
-          <Link
-            href="/about"
-            className="inline-flex items-center gap-1 font-semibold text-primary hover:underline"
-            data-testid="link-footer-about"
-          >
-            <CircleHelp size={13} />
-            {rw ? "Ku bijyanye n’amakuru" : "Sources & how to read"}
-            <ArrowUpRight size={12} />
-          </Link>
-          <span className="inline-flex items-center gap-1.5 text-[10px] text-muted-foreground/80">
-            <ShieldCheck size={13} />
-            {rw
-              ? "Prototype yigenga · Si serivisi ya NISR"
-              : "Not an NISR service"}
-          </span>
-        </footer>
       </main>
     </div>
   );

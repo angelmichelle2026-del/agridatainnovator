@@ -561,13 +561,6 @@ export function HomePage({ language }: Props) {
               `Imibare iheruka: ${latestTag}`,
             )}
           </span>
-          <span>
-            {tx(
-              rw,
-              "Independent planning aid · not an NISR service",
-              "Igikoresho cyigenga cy’igenamigambi · si serivisi ya NISR",
-            )}
-          </span>
         </div>
       </section>
       <section
@@ -729,15 +722,6 @@ export function HomePage({ language }: Props) {
           </Link>
         </div>
       </section>
-      <div className="mt-6">
-        <SourceNote>
-          {tx(
-            rw,
-            "Planning aid, not an official verdict: this is a checked snapshot, not a live NISR feed. National figures describe Rwanda as a whole; district data here covers land use only. Always open the source before quoting a number.",
-            "AgriLens AI ni prototype yigenga kandi ntifitanye isano na NISR. Imibare y’ubushakashatsi ni iya NISR; yagaragajwe n’inkomoko n’ibipimo byayo.",
-          )}
-        </SourceNote>
-      </div>
     </div>
   );
 }
@@ -3310,7 +3294,7 @@ export function AboutPage({ language }: Props) {
       <PageHeading
         index="06"
         eyebrow={tx(rw, "DATA SOURCES & LIMITS", "UBWIZERWE N’IMBIBI")}
-        title={tx(rw, "Sources & how to read", "Amakuru n’uburyo")}
+        title={tx(rw, "Sources", "Inkomoko")}
         description={tx(
           rw,
           "See what is in this snapshot, how to read the figures, and where each number came from.",
