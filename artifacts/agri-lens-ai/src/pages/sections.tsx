@@ -232,18 +232,20 @@ function PageHeading({
   description,
   index,
 }: {
-  eyebrow: string;
+  eyebrow?: string;
   title: string;
   description: string;
-  index: string;
+  index?: string;
 }) {
   return (
     <div className="page-enter mb-7 flex flex-col justify-between gap-4 border-b border-border pb-6 md:flex-row md:items-end">
       <div className="max-w-[780px]">
-        <div className="mb-2.5 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[.17em] text-primary">
-          <span className="h-px w-5 bg-primary" />
-          {eyebrow}
-        </div>
+        {eyebrow && (
+          <div className="mb-2.5 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[.17em] text-primary">
+            <span className="h-px w-5 bg-primary" />
+            {eyebrow}
+          </div>
+        )}
         <h1 className="display-font text-[32px] font-extrabold leading-[1.1] tracking-[-.055em] text-foreground sm:text-[42px]">
           {title}
         </h1>
@@ -251,9 +253,11 @@ function PageHeading({
           {description}
         </p>
       </div>
-      <div className="hidden shrink-0 font-mono text-[10px] uppercase tracking-[.13em] text-muted-foreground md:block">
-        NISR SAS · {index}
-      </div>
+      {index && (
+        <div className="hidden shrink-0 font-mono text-[10px] uppercase tracking-[.13em] text-muted-foreground md:block">
+          NISR SAS · {index}
+        </div>
+      )}
     </div>
   );
 }
@@ -970,8 +974,6 @@ export function DataPage({ language }: Props) {
   return (
     <div className="page-enter">
       <PageHeading
-        index="01"
-        eyebrow={tx(rw, "BROWSE THE NUMBERS", "SHAKISHA IMIBARE")}
         title={tx(rw, "Explore the data", "Shakisha amakuru")}
         description={tx(
           rw,
@@ -1461,15 +1463,6 @@ export function DataPage({ language }: Props) {
               : `${filteredWorkbookRows.length} displayed rows · Table ${selectedWorkbookTable?.number ?? "—"} of 35`}
         </p>
       </section>
-      <div className="mt-5">
-        <SourceNote>
-          {tx(
-            rw,
-            "A dash in the NISR district tables is represented as missing (—), not zero. District land areas use thousand hectares; the 2025 report is rounded, while the supplied 2026 workbook retains greater precision. All 35 workbook tables are available below.",
-            "Utwo tudomo muri raporo ya NISR tugaragazwa nk’amakuru adahari (—), si zeru. Ubutaka bwo muri 2025 na 2026 bupimwa mu bihumbi bya hegitari. Imbonerahamwe 35 ya 2026 iri mu bubiko.",
-          )}
-        </SourceNote>
-      </div>
     </div>
   );
 }
@@ -1546,7 +1539,6 @@ export function DashboardPage({ language }: Props) {
     <div className="page-enter">
       <PageHeading
         index="02"
-        eyebrow={tx(rw, "THE LATEST SURVEY", "INCAMAKE Y’IBIPIMO")}
         title={tx(rw, "Seasonal picture", "Ishusho y’ibihe")}
         description={tx(
           rw,
