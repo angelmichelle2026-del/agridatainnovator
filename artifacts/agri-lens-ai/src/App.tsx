@@ -1,14 +1,18 @@
-import { type ReactNode, useEffect, useState } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ErrorBoundary } from '@/components/error-boundary';
-import { Toaster } from '@/components/ui/toaster';
-import { TooltipProvider } from '@/components/ui/tooltip';
-import { AppShell, type Language } from '@/components/app-shell';
+import { type ReactNode, useEffect, useState } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ErrorBoundary } from "@/components/error-boundary";
+import { Toaster } from "@/components/ui/toaster";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { AppShell, type Language } from "@/components/app-shell";
 import {
-  AboutPage, AssistantPage, ComparePage, DashboardPage, DataPage,
-  HomePage, InsightsPage, NotFoundPage,
-} from '@/pages/sections';
-import { Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
+  AssistantPage,
+  ComparePage,
+  DashboardPage,
+  DataPage,
+  HomePage,
+  NotFoundPage,
+} from "@/pages/sections";
+import { Route, Switch, useLocation, Router as WouterRouter } from "wouter";
 
 const queryClient = new QueryClient();
 
@@ -17,12 +21,22 @@ function Router({ language }: { language: Language }) {
     <RoutedErrorBoundary>
       <Switch>
         <Route path="/" component={() => <HomePage language={language} />} />
-        <Route path="/data" component={() => <DataPage language={language} />} />
-        <Route path="/dashboard" component={() => <DashboardPage language={language} />} />
-        <Route path="/compare" component={() => <ComparePage language={language} />} />
-        <Route path="/insights" component={() => <InsightsPage language={language} />} />
-        <Route path="/assistant" component={() => <AssistantPage language={language} />} />
-        <Route path="/about" component={() => <AboutPage language={language} />} />
+        <Route
+          path="/data"
+          component={() => <DataPage language={language} />}
+        />
+        <Route
+          path="/dashboard"
+          component={() => <DashboardPage language={language} />}
+        />
+        <Route
+          path="/compare"
+          component={() => <ComparePage language={language} />}
+        />
+        <Route
+          path="/assistant"
+          component={() => <AssistantPage language={language} />}
+        />
         <Route component={() => <NotFoundPage language={language} />} />
       </Switch>
     </RoutedErrorBoundary>
@@ -37,9 +51,9 @@ function RoutedErrorBoundary({ children }: { children: ReactNode }) {
 function App() {
   const [language, setLanguage] = useState<Language>(() => {
     try {
-      return localStorage.getItem('agrilens-language') === 'rw' ? 'rw' : 'en';
+      return localStorage.getItem("agrilens-language") === "rw" ? "rw" : "en";
     } catch {
-      return 'en';
+      return "en";
     }
   });
 
@@ -50,7 +64,7 @@ function App() {
   function changeLanguage(next: Language) {
     setLanguage(next);
     try {
-      localStorage.setItem('agrilens-language', next);
+      localStorage.setItem("agrilens-language", next);
     } catch {
       // Language selection remains active for this session when storage is unavailable.
     }
@@ -59,7 +73,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
+        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
           <AppShell language={language} onLanguageChange={changeLanguage}>
             <Router language={language} />
           </AppShell>

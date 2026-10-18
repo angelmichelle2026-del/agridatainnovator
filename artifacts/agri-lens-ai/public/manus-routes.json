@@ -1,0 +1,9 @@
+{
+  "routes": [
+    { "path": "/", "title": "Home" },
+    { "path": "/data", "title": "Explore data" },
+    { "path": "/dashboard", "title": "Seasonal picture" },
+    { "path": "/compare", "title": "Compare districts" },
+    { "path": "/assistant", "title": "Ask AgriLens" }
+  ]
+}
