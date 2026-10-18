@@ -1671,7 +1671,6 @@ export function DashboardPage({ language }: Props) {
   const filteredAreaRows = areaRows.filter(
     (row) => seasonFilter === "ALL" || row.season === seasonFilter,
   );
-  const latest = getObservation(cardYear, selectedSeason, "improved_seed_use")!;
   const latestCards = [
     "improved_seed_use",
     "organic_fertilizer_use",
@@ -1685,7 +1684,6 @@ export function DashboardPage({ language }: Props) {
   return (
     <div className="page-enter">
       <PageHeading
-        index="02"
         title={tx(rw, "Seasonal picture", "Ishusho y’ibihe")}
         description={tx(
           rw,
@@ -1698,7 +1696,7 @@ export function DashboardPage({ language }: Props) {
           {tx(
             rw,
             seasonFilter === "ALL"
-              ? "Latest NISR season in this snapshot"
+              ? "Latest available season"
               : "Most recent data for the selected season",
             seasonFilter === "ALL"
               ? "Imibare iheruka gutangazwa"
@@ -1718,8 +1716,8 @@ export function DashboardPage({ language }: Props) {
         <p className="text-[11px] leading-5 text-muted-foreground">
           {tx(
             rw,
-            "Choose a survey season to filter the cards and charts. Detailed crop-production tables are available for Season A only.",
-            "Hitamo igihe cy’ubushakashatsi kugira ngo uhindure imibare n’amashusho. Imbonerahamwe irambuye y’umusaruro iraboneka kuri Season A gusa.",
+            "Detailed crop-production tables are available for Season A only.",
+            "Imbonerahamwe irambuye y’umusaruro iraboneka kuri Season A gusa.",
           )}
         </p>
         <NativeSelect
@@ -1825,10 +1823,10 @@ export function DashboardPage({ language }: Props) {
           </div>
           <p className="mt-2 text-[10px] leading-4 text-muted-foreground">
             {seasonFilter === "ALL"
-              ? `2025 values: NISR SAS annual report summary. 2026 values: NISR season release pages. Latest snapshot: ${latest.year} Season ${latest.season}, ${latest.value}% used improved seeds.`
+              ? "2025 values: NISR SAS annual report summary. 2026 values: NISR season release pages."
               : selectedSeason === "C"
-                ? "Only 2025 Season C figures are included in this snapshot; 2026 Season C is not available here."
-                : `Showing matched Season ${selectedSeason} observations for 2025 and 2026. ${latest.year} Season ${latest.season}: ${latest.value}% used improved seeds.`}
+                ? "Only 2025 Season C figures are available; 2026 Season C is not included."
+                : `Showing matched Season ${selectedSeason} observations for 2025 and 2026.`}
           </p>
         </article>
         <article className="rounded-xl border border-border bg-card p-4 sm:p-5">
@@ -1885,8 +1883,7 @@ export function DashboardPage({ language }: Props) {
             </ResponsiveContainer>
             {!filteredAreaRows.length && (
               <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-background/90 px-6 text-center text-[11px] text-muted-foreground">
-                No land-use estimates for Season C are included in this
-                snapshot.
+                No land-use estimates are available for Season C.
               </div>
             )}
           </div>
@@ -2089,9 +2086,6 @@ function CropProductionVisuals({
               <h3 className="display-font mt-1 text-[16px] font-bold">
                 Crops with the highest reported output
               </h3>
-              <p className="mt-1 text-[10px] text-muted-foreground">
-                Same season, two years: 2025 A and 2026 A.
-              </p>
             </div>
             <div className="h-[330px] w-full">
               <ResponsiveContainer width="100%" height="100%">
