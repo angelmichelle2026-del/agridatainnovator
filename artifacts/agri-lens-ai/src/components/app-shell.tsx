@@ -1,9 +1,7 @@
 import { type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import {
-  Activity,
   BarChart3,
-  BookOpen,
   GitCompareArrows,
   Home,
   Languages,
@@ -48,28 +46,12 @@ const navigation = [
     shortRw: "Gereranya",
   },
   {
-    href: "/insights",
-    icon: Activity,
-    en: "Changes & context",
-    rw: "Impinduka n’ibisobanuro",
-    shortEn: "Insights",
-    shortRw: "Ibyagaragaye",
-  },
-  {
     href: "/assistant",
     icon: MessageSquareText,
     en: "Ask AgriLens",
     rw: "Baza AgriLens",
     shortEn: "Ask AI",
     shortRw: "Baza AI",
-  },
-  {
-    href: "/about",
-    icon: BookOpen,
-    en: "Sources",
-    rw: "Inkomoko",
-    shortEn: "Sources",
-    shortRw: "Inkomoko",
   },
 ];
 

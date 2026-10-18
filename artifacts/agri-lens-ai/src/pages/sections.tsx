@@ -19,6 +19,7 @@ import {
   Wheat,
 } from "lucide-react";
 import { PromptComposer } from "@/components/ui/prompt-composer";
+import { DistrictLandUseMap } from "@/components/district-land-use-map";
 import {
   Bar,
   BarChart,
@@ -921,6 +922,18 @@ export function DataPage({ language }: Props) {
     );
   const districtMetric =
     DISTRICT_METRICS.find((item) => item.key === metric) ?? DISTRICT_METRICS[0];
+  const mapPeriod =
+    selectedSeason === "ALL" ? (availableSeasons.at(-1) ?? "") : selectedSeason;
+  const districtMapObservations = districtRows
+    .filter(
+      (row) =>
+        row.district !== "National" &&
+        `${row.year} · ${row.season}` === mapPeriod,
+    )
+    .map((row) => ({
+      district: row.district,
+      value: row[districtMetric.key] as number | null,
+    }));
   const exportNational = () =>
     downloadCsv(
       "nisr-sas-national-observations.csv",
@@ -971,6 +984,79 @@ export function DataPage({ language }: Props) {
     value: item.key,
     label: item.label,
   }));
+  const districtRecordCount = districtRows.filter(
+    (row) => row.district !== "National",
+  ).length;
+  const datasetCollections = [
+    {
+      id: "national" as const,
+      Icon: Activity,
+      title: tx(rw, "National estimates", "Ibipimo by’igihugu"),
+      description: tx(
+        rw,
+        "Seasonal farmer-practice indicators from 2025–26.",
+        "Ibipimo by’ibikorwa by’abahinzi mu bihe by’ubushakashatsi 2025–26.",
+      ),
+      count: `${observations.length} ${tx(rw, "records", "imirongo")}`,
+    },
+    {
+      id: "district" as const,
+      Icon: MapPinned,
+      title: tx(
+        rw,
+        "District land use · 2025–26",
+        "Ubutaka mu turere · 2025–26",
+      ),
+      description: tx(
+        rw,
+        "Browse land-area and cultivation measures by district.",
+        "Reba ibipimo by’ubutaka n’ahahinze kuri buri karere.",
+      ),
+      count: `${districtRecordCount} ${tx(rw, "district-period rows", "imirongo y’uturere")}`,
+    },
+    {
+      id: "workbook" as const,
+      Icon: BookOpenCheck,
+      title: tx(rw, "All 35 tables · 2026 A", "Imbonerahamwe 35 · 2026 A"),
+      description: tx(
+        rw,
+        "Detailed Season A tables with row search and CSV export.",
+        "Imbonerahamwe zirambuye za Season A zifite gushakisha no gukurura CSV.",
+      ),
+      count: `${workbookTables.length || 35} ${tx(rw, "tables", "imbonerahamwe")}`,
+    },
+  ];
+  const selectDataset = (nextDataset: typeof dataset) => {
+    setDataset(nextDataset);
+    setSeason("ALL");
+    setQuery("");
+    if (nextDataset === "national") {
+      setMetric("improved_seed_use");
+    } else if (nextDataset === "district") {
+      setMetric(DISTRICT_METRICS[0].key);
+    } else {
+      setWorkbookTableId("table-06");
+      loadWorkbookTables();
+    }
+  };
+  const resultCountSummary =
+    dataset === "national"
+      ? `${filteredNational.length} ${tx(rw, "published rows", "imirongo yatangajwe")} · ${tx(rw, "national estimates", "ibipimo by’igihugu")}${selectedSeason === "ALL" ? ` · ${tx(rw, "all available seasons", "ibihe byose bihari")}` : ` · Season ${selectedSeason}`}`
+      : dataset === "district"
+        ? `${filteredDistrict.length} ${tx(rw, "district rows", "imirongo y’uturere")}${selectedSeason === "ALL" ? ` · ${tx(rw, "all available periods", "ibihe byose bihari")}` : ` · ${selectedSeason}`}`
+        : workbookLoadStatus === "loading"
+          ? tx(
+              rw,
+              "Loading table rows…",
+              "Imirongo y’imbonerahamwe iri gushakishwa…",
+            )
+          : workbookLoadStatus === "error"
+            ? tx(
+                rw,
+                "Table rows could not be loaded.",
+                "Imirongo y’imbonerahamwe ntiyafungutse.",
+              )
+            : `${filteredWorkbookRows.length} of ${selectedWorkbookTable?.row_count ?? 0} ${tx(rw, "rows", "imirongo")} · Table ${selectedWorkbookTable?.number ?? "—"} of ${workbookTables.length || 35}`;
   return (
     <div className="page-enter">
       <PageHeading
@@ -1126,56 +1212,96 @@ export function DataPage({ language }: Props) {
           </div>
         )}
       </section>
-      <div
-        className="mb-5 flex flex-wrap gap-2"
-        role="tablist"
-        aria-label="Dataset type"
-      >
-        <button
-          role="tab"
-          aria-selected={dataset === "national"}
-          onClick={() => {
-            setDataset("national");
-            setMetric("improved_seed_use");
-            setSeason("ALL");
-            setQuery("");
-          }}
-          className={`rounded-lg px-4 py-2.5 text-[12px] font-semibold ${dataset === "national" ? "bg-primary text-primary-foreground" : "border border-border bg-card text-muted-foreground"}`}
+      <section className="mb-5" aria-labelledby="dataset-collections-title">
+        <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <p className="text-[9px] font-bold uppercase tracking-[.14em] text-primary">
+              {tx(rw, "DATA COLLECTIONS", "IBIKORWA BY’AMAKURU")}
+            </p>
+            <h2
+              id="dataset-collections-title"
+              className="display-font mt-1 text-[19px] font-bold tracking-[-.035em] text-foreground"
+            >
+              {tx(rw, "Browse by collection", "Hitamo icyiciro cy’amakuru")}
+            </h2>
+          </div>
+          <span className="rounded-full border border-border bg-card px-2.5 py-1 text-[10px] font-semibold text-muted-foreground">
+            {tx(rw, "3 collections", "Ibyiciro 3")}
+          </span>
+        </div>
+        <div
+          className="grid gap-3 md:grid-cols-3"
+          role="tablist"
+          aria-label={tx(rw, "Dataset collections", "Ibyiciro by’amakuru")}
         >
-          {tx(rw, "National estimates", "Ibipimo by’igihugu")}
-        </button>
-        <button
-          role="tab"
-          aria-selected={dataset === "district"}
-          onClick={() => {
-            setDataset("district");
-            setMetric(DISTRICT_METRICS[0].key);
-            setSeason("ALL");
-            setQuery("");
-          }}
-          className={`rounded-lg px-4 py-2.5 text-[12px] font-semibold ${dataset === "district" ? "bg-primary text-primary-foreground" : "border border-border bg-card text-muted-foreground"}`}
-        >
-          {tx(rw, "District land use · 2025–26", "Ubutaka mu turere · 2025–26")}
-        </button>
-        <button
-          role="tab"
-          aria-selected={dataset === "workbook"}
-          onClick={() => {
-            setDataset("workbook");
-            setWorkbookTableId("table-06");
-            setSeason("ALL");
-            setQuery("");
-            loadWorkbookTables();
-          }}
-          className={`rounded-lg px-4 py-2.5 text-[12px] font-semibold ${dataset === "workbook" ? "bg-primary text-primary-foreground" : "border border-border bg-card text-muted-foreground"}`}
-        >
-          {tx(rw, "All 35 tables · 2026 A", "Imbonerahamwe 35 · 2026 A")}
-        </button>
-      </div>
+          {datasetCollections.map((collection) => {
+            const active = dataset === collection.id;
+            const Icon = collection.Icon;
+            return (
+              <button
+                key={collection.id}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                aria-controls="data-results-panel"
+                data-testid={`tab-data-${collection.id}`}
+                onClick={() => selectDataset(collection.id)}
+                className={`group flex h-full flex-col rounded-2xl border p-4 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 ${active ? "border-primary/35 bg-[#f0f6f2] shadow-sm ring-1 ring-primary/10" : "border-border bg-card hover:border-primary/25 hover:bg-secondary/30"}`}
+              >
+                <span className="flex w-full items-start justify-between gap-3">
+                  <span
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${active ? "bg-primary text-primary-foreground" : "bg-secondary text-primary"}`}
+                  >
+                    <Icon size={17} />
+                  </span>
+                  <span className="rounded-full border border-border/80 bg-background/80 px-2.5 py-1 text-[9px] font-semibold text-muted-foreground">
+                    {collection.count}
+                  </span>
+                </span>
+                <span className="display-font mt-3 text-[14px] font-bold leading-5 text-foreground">
+                  {collection.title}
+                </span>
+                <span className="mt-1 text-[11px] leading-5 text-muted-foreground">
+                  {collection.description}
+                </span>
+                <span className="mt-3 inline-flex items-center gap-1.5 text-[10px] font-bold text-primary">
+                  {tx(rw, "Browse collection", "Reba amakuru")}
+                  <ArrowRight
+                    size={12}
+                    className="transition-transform group-hover:translate-x-1"
+                  />
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
       <section
+        id="data-results-panel"
         className="rounded-2xl border border-border bg-card p-4 sm:p-6"
         data-testid="nisr-data-explorer"
       >
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-3 border-b border-border/70 pb-3">
+          <div>
+            <p className="text-[9px] font-bold uppercase tracking-[.13em] text-primary">
+              {tx(rw, "REFINE YOUR SELECTION", "SHUNGURA AMAKURU")}
+            </p>
+            <h2 className="display-font mt-1 text-[16px] font-bold text-foreground">
+              {tx(
+                rw,
+                "Filter and export records",
+                "Shungura kandi ukurure amakuru",
+              )}
+            </h2>
+          </div>
+          <p
+            className="rounded-full bg-secondary/70 px-3 py-1.5 text-[10px] font-semibold text-foreground"
+            role="status"
+            aria-live="polite"
+          >
+            {resultCountSummary}
+          </p>
+        </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_190px_190px_auto] lg:items-end">
           <NativeSelect
             label={
@@ -1244,10 +1370,14 @@ export function DataPage({ language }: Props) {
               rw,
               dataset === "workbook"
                 ? "Search table rows"
-                : "Search district or year",
+                : dataset === "district"
+                  ? "Search district or year"
+                  : "Search year or season",
               dataset === "workbook"
                 ? "Shakisha mu mbonerahamwe"
-                : "Shakisha akarere cyangwa umwaka",
+                : dataset === "district"
+                  ? "Shakisha akarere cyangwa umwaka"
+                  : "Shakisha umwaka cyangwa igihembwe",
             )}
             <span className="relative">
               <Search
@@ -1262,7 +1392,7 @@ export function DataPage({ language }: Props) {
                     ? "e.g. maize or Nyagatare"
                     : dataset === "district"
                       ? "e.g. Nyagatare"
-                      : "e.g. 2026"
+                      : "e.g. 2026 or B"
                 }
                 className="h-10 w-full rounded-lg border border-border bg-background pl-9 pr-3 text-[12px] font-medium normal-case tracking-normal text-foreground"
                 data-testid="input-data-search"
@@ -1294,8 +1424,38 @@ export function DataPage({ language }: Props) {
             </a>
           )}
         </div>
+        {dataset === "district" && mapPeriod && (
+          <DistrictLandUseMap
+            language={language}
+            observations={districtMapObservations}
+            period={mapPeriod}
+            usesLatestPeriod={selectedSeason === "ALL"}
+            metric={{
+              key: String(districtMetric.key),
+              label: districtMetric.label,
+              unit: districtMetric.unit,
+            }}
+            searchQuery={query}
+          />
+        )}
+        <p className="mt-3 text-[10px] text-muted-foreground sm:hidden">
+          {tx(
+            rw,
+            "Swipe the table horizontally to see all columns.",
+            "Simbuza imbonerahamwe ibumoso cyangwa iburyo kugira ngo ubone inkingi zose.",
+          )}
+        </p>
         {dataset === "national" ? (
-          <div className="mt-5 overflow-x-auto rounded-lg border border-border">
+          <div
+            className="mt-2 overflow-x-auto rounded-lg border border-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 sm:mt-5"
+            role="region"
+            aria-label={tx(
+              rw,
+              "National agricultural data table",
+              "Imbonerahamwe y’amakuru y’ubuhinzi ku rwego rw’igihugu",
+            )}
+            tabIndex={0}
+          >
             <table className="w-full min-w-[620px] text-left text-[12px]">
               <thead className="bg-muted/70 text-[10px] uppercase tracking-[.1em] text-muted-foreground">
                 <tr>
@@ -1338,7 +1498,16 @@ export function DataPage({ language }: Props) {
             )}
           </div>
         ) : dataset === "district" ? (
-          <div className="mt-5 overflow-x-auto rounded-lg border border-border">
+          <div
+            className="mt-2 overflow-x-auto rounded-lg border border-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 sm:mt-5"
+            role="region"
+            aria-label={tx(
+              rw,
+              "District land-use data table",
+              "Imbonerahamwe y’imikoreshereze y’ubutaka mu turere",
+            )}
+            tabIndex={0}
+          >
             <table className="w-full min-w-[620px] text-left text-[12px]">
               <thead className="bg-muted/70 text-[10px] uppercase tracking-[.1em] text-muted-foreground">
                 <tr>
@@ -1411,7 +1580,16 @@ export function DataPage({ language }: Props) {
                 />
               )}
             </div>
-            <div className="overflow-x-auto">
+            <div
+              className="overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+              role="region"
+              aria-label={tx(
+                rw,
+                "NISR workbook data table",
+                "Imbonerahamwe y’amakuru ya NISR",
+              )}
+              tabIndex={0}
+            >
               <table className="w-full min-w-[760px] text-left text-[11px]">
                 <thead className="bg-muted/70 text-[9px] uppercase tracking-[.08em] text-muted-foreground">
                   <tr>
@@ -1455,13 +1633,6 @@ export function DataPage({ language }: Props) {
             </div>
           </div>
         )}
-        <p className="mt-3 text-[10px] text-muted-foreground">
-          {dataset === "national"
-            ? `${filteredNational.length} published rows · national estimates${selectedSeason === "ALL" ? " · all available seasons" : ` · Season ${selectedSeason}`}`
-            : dataset === "district"
-              ? `${filteredDistrict.length} district rows${selectedSeason === "ALL" ? " · all available periods" : ` · ${selectedSeason}`}`
-              : `${filteredWorkbookRows.length} displayed rows · Table ${selectedWorkbookTable?.number ?? "—"} of 35`}
-        </p>
       </section>
     </div>
   );
