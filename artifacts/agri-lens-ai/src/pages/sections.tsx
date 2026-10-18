@@ -270,30 +270,6 @@ function SourceNote({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
-function AdministrativeSourceNote({ rw }: { rw: boolean }) {
-  return (
-    <p className="mt-2 text-[10px] leading-4 text-muted-foreground">
-      {tx(
-        rw,
-        "Province and district groupings follow the",
-        "Imiterere y’intara n’uturere ikurikiza",
-      )}{" "}
-      <a
-        href={administrativeAreas.source_url}
-        target="_blank"
-        rel="noreferrer"
-        className="font-semibold text-primary hover:underline"
-      >
-        {tx(
-          rw,
-          "Government of Rwanda local-government directory",
-          "urutonde rw’inzego z’ibanze rwa Leta y’u Rwanda",
-        )}
-      </a>
-      .
-    </p>
-  );
-}
 function StatCard({
   label,
   value,
@@ -1921,23 +1897,6 @@ export function DashboardPage({ language }: Props) {
         </article>
       </section>
       <CropProductionVisuals seasonFilter={seasonFilter} language={language} />
-      <div className="mt-5 grid gap-4 md:grid-cols-[1fr_auto] md:items-center">
-        <SourceNote>
-          {tx(
-            rw,
-            "These are survey estimates and reported areas—not causal evidence. Season C 2025 was reported in the annual report; the 2026 figures link to separate NISR releases. Compare the same season across years with care.",
-            "Iyi ni imibare y’ubushakashatsi n’ubutaka bwatangajwe, si gihamya y’impamvu n’ingaruka. Season C 2025 iri muri raporo y’umwaka; iya 2026 iri muri raporo za buri gihe.",
-          )}
-        </SourceNote>
-        <div className="flex flex-wrap gap-3 text-[10px]">
-          <SourceLink
-            sourceId="nisr-sas-2025-annual-report"
-            label="NISR SAS 2025"
-          />
-          <SourceLink sourceId="nisr-sas-2026-season-a" label="2026 Season A" />
-          <SourceLink sourceId="nisr-sas-2026-season-b" label="2026 Season B" />
-        </div>
-      </div>
     </div>
   );
 }
@@ -2068,10 +2027,6 @@ function CropProductionVisuals({
   const leadingDistricts =
     districtFilter === "ALL" ? districtValues.slice(-10) : districtValues;
   const topDistrict = districtValues[districtValues.length - 1];
-  const percentageChange =
-    selectedCrop && selectedCrop.prior !== 0
-      ? ((selectedCrop.current - selectedCrop.prior) / selectedCrop.prior) * 100
-      : null;
   const compactTonnes = (value: number) =>
     value >= 1_000_000
       ? `${(value / 1_000_000).toFixed(1)}m`
@@ -2253,7 +2208,6 @@ function CropProductionVisuals({
                   : `Showing ${districtValues.length} districts in ${provinceFilter}`
                 : `Selected district: ${districtFilter} · ${entityForDistrict(districtFilter)?.name ?? provinceFilter} · 2026 Season A`}
             </p>
-            <AdministrativeSourceNote rw={rw} />
             <div className="h-[330px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
@@ -2329,13 +2283,12 @@ function CropProductionVisuals({
       {(seasonFilter === "ALL" || seasonFilter === "A") && (
         <ProvinceYieldCharts language={language} />
       )}
-      <p className="mt-3 text-[10px] leading-4 text-muted-foreground">
-        {seasonFilter !== "ALL" && seasonFilter !== "A"
-          ? "No detailed crop-production values for this selected season are included in the supplied workbook."
-          : selectedCrop
-            ? `${selectedCrop.crop}: ${formatTonnes(selectedCrop.current)} in 2026 Season A versus ${formatTonnes(selectedCrop.prior)} in 2025 Season A (${percentageChange === null ? "change unavailable" : `${percentageChange >= 0 ? "+" : ""}${percentageChange.toFixed(1)}%`}). This is an arithmetic difference between published estimates, not a test of statistical significance.`
-            : "Crop production and district rankings are drawn from the 2026 Season A workbook."}
-      </p>
+      {seasonFilter !== "ALL" && seasonFilter !== "A" && (
+        <p className="mt-3 text-[10px] leading-4 text-muted-foreground">
+          No detailed crop-production values for this selected season are
+          included in the supplied workbook.
+        </p>
+      )}
     </section>
   );
 }
@@ -2677,20 +2630,6 @@ function ProvinceYieldCharts({ language }: Props) {
               </div>
             </article>
           </div>
-          <SourceNote>
-            {tx(
-              rw,
-              "Province/city yields are derived as the sum of district production divided by the sum of district harvested area (area-weighted). They are not separately published NISR province estimates. The national reference is NISR Table 13. This is a single 2026 Season A snapshot, not a multi-season trend. Missing area is not treated as zero.",
-              "Umusaruro w’intara n’Umujyi wa Kigali ubazwe hateranywa umusaruro w’uturere ugabanyijwe n’ubuso bw’uturere bwasaruwe (hazirikanwa ubunini bw’ubuso). NISR ntiyabitangaje ukwabyo nk’imibare y’intara. Ikigereranyo cy’igihugu gituruka kuri Table 13 ya NISR. Iyi ni ifoto y’igihembwe Season A 2026 gusa, si ihinduka ry’ibihe byinshi. Ahari amakuru y’ubuso abura ntihafatwa nka zeru.",
-            )}
-          </SourceNote>
-          <div className="mt-3">
-            <SourceLink
-              sourceId={data.source.id}
-              label="Source: NISR SAS 2026 Season A, Tables 12, 13 and 15"
-            />
-            <AdministrativeSourceNote rw={rw} />
-          </div>
         </>
       )}
     </section>
@@ -2901,7 +2840,6 @@ export function ComparePage({ language }: Props) {
             "NISR itanga ubutaka mu bihumbi bya hegitari. Umubare w’igihugu nturi mu mahitamo y’uturere. Imibare ishobora kuba yarazengurutswe; utudomo dufatwa nk’amakuru adahari, si zeru.",
           )}
         </SourceNote>
-        <AdministrativeSourceNote rw={rw} />
       </div>
     </div>
   );
