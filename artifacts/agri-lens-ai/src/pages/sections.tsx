@@ -75,6 +75,20 @@ type WorkbookTable = {
   rows: Array<Array<string | number | null>>;
   source_id: string;
 };
+type AhsWorkbookRow = {
+  excel_row: number;
+  cells: Array<string | number | null>;
+};
+type AhsWorkbookTable = {
+  id: string;
+  number: number;
+  sheet_name: string;
+  title: string;
+  columns: string[];
+  row_count: number;
+  rows: AhsWorkbookRow[];
+  source_id: string;
+};
 type AdministrativeEntity = {
   name: string;
   rw_name: string;
@@ -223,6 +237,8 @@ function searchResultKindLabel(kind: string, rw: boolean) {
     workbook_row: ["Workbook row", "Umurongo w’imbonerahamwe"],
     workbook_table: ["Workbook table", "Imbonerahamwe ya NISR"],
     workbook_value: ["NISR value", "Agaciro ka NISR"],
+    ahs_row: ["AHS 2024 row", "Umurongo wa AHS 2024"],
+    ahs_table: ["AHS 2024 table", "Imbonerahamwe ya AHS 2024"],
   };
   const label = labels[kind];
   return label ? (rw ? label[1] : label[0]) : kind.replace(/_/g, " ");
@@ -369,6 +385,10 @@ function displayWorkbookCell(value: string | number | null) {
     );
   }
   return value;
+}
+
+function displayAhsCell(value: string | number | null) {
+  return value == null ? "" : String(value);
 }
 
 export function HomePage({ language }: Props) {
@@ -742,9 +762,9 @@ const DISTRICT_METRICS: Array<{
 
 export function DataPage({ language }: Props) {
   const rw = isRw(language);
-  const [dataset, setDataset] = useState<"national" | "district" | "workbook">(
-    "national",
-  );
+  const [dataset, setDataset] = useState<
+    "national" | "district" | "workbook" | "ahs"
+  >("national");
   const [metric, setMetric] = useState("improved_seed_use");
   const [season, setSeason] = useState("ALL");
   const [query, setQuery] = useState("");
@@ -767,6 +787,11 @@ export function DataPage({ language }: Props) {
   const [workbookTableId, setWorkbookTableId] = useState("table-06");
   const [workbookTables, setWorkbookTables] = useState<WorkbookTable[]>([]);
   const [workbookLoadStatus, setWorkbookLoadStatus] = useState<
+    "idle" | "loading" | "ready" | "error"
+  >("idle");
+  const [ahsTableId, setAhsTableId] = useState("ahs-2024-table-01");
+  const [ahsTables, setAhsTables] = useState<AhsWorkbookTable[]>([]);
+  const [ahsLoadStatus, setAhsLoadStatus] = useState<
     "idle" | "loading" | "ready" | "error"
   >("idle");
   async function searchCatalog(event: FormEvent<HTMLFormElement>) {
@@ -830,9 +855,20 @@ export function DataPage({ language }: Props) {
       })
       .catch(() => setWorkbookLoadStatus("error"));
   };
+  const loadAhsTables = () => {
+    if (ahsLoadStatus === "loading" || ahsLoadStatus === "ready") return;
+    setAhsLoadStatus("loading");
+    void import("@/data/ahs-2024-tables.json")
+      .then((module) => {
+        setAhsTables(module.default.tables as AhsWorkbookTable[]);
+        setAhsLoadStatus("ready");
+      })
+      .catch(() => setAhsLoadStatus("error"));
+  };
   const selectedWorkbookTable =
     workbookTables.find((table) => table.id === workbookTableId) ??
     workbookTables[5];
+  const selectedAhsTable = ahsTables.find((table) => table.id === ahsTableId);
   const workbookHeaders = (selectedWorkbookTable?.headers ?? []).map(
     (header, index) =>
       selectedWorkbookTable.number === 35 &&
@@ -850,12 +886,21 @@ export function DataPage({ language }: Props) {
           .includes(query.toLowerCase()),
       ),
   );
+  const filteredAhsRows = (selectedAhsTable?.rows ?? []).filter(
+    (row) =>
+      !query ||
+      row.cells.some((value) =>
+        String(value ?? "")
+          .toLowerCase()
+          .includes(query.toLowerCase()),
+      ),
+  );
   const availableSeasons =
     dataset === "district"
       ? [
           ...new Set(districtRows.map((row) => `${row.year} · ${row.season}`)),
         ].sort()
-      : dataset === "workbook"
+      : dataset === "workbook" || dataset === "ahs"
         ? []
         : [
             ...new Set(
@@ -909,6 +954,12 @@ export function DataPage({ language }: Props) {
     .map((row) => ({
       district: row.district,
       value: row[districtMetric.key] as number | null,
+      statistics: DISTRICT_METRICS.map((item) => ({
+        key: String(item.key),
+        label: item.label,
+        unit: item.unit,
+        value: row[item.key] as number | null,
+      })),
     }));
   const exportNational = () =>
     downloadCsv(
@@ -950,6 +1001,24 @@ export function DataPage({ language }: Props) {
         source_id: selectedWorkbookTable.source_id,
         source_url: sources.find(
           (source) => source.id === selectedWorkbookTable.source_id,
+        )?.source_url,
+      })),
+    );
+  const exportAhsTable = () =>
+    selectedAhsTable &&
+    downloadCsv(
+      `ahs-2024-table-${String(selectedAhsTable.number).padStart(2, "0")}.csv`,
+      filteredAhsRows.map((row) => ({
+        excel_row: row.excel_row,
+        ...Object.fromEntries(
+          selectedAhsTable.columns.map((column, index) => [
+            `Excel column ${column}`,
+            row.cells[index] ?? null,
+          ]),
+        ),
+        source_id: selectedAhsTable.source_id,
+        source_url: sources.find(
+          (source) => source.id === selectedAhsTable.source_id,
         )?.source_url,
       })),
     );
@@ -1001,6 +1070,17 @@ export function DataPage({ language }: Props) {
       ),
       count: `${workbookTables.length || 35} ${tx(rw, "tables", "imbonerahamwe")}`,
     },
+    {
+      id: "ahs" as const,
+      Icon: BookOpenCheck,
+      title: tx(rw, "AHS 2024 · 56 tables", "AHS 2024 · imbonerahamwe 56"),
+      description: tx(
+        rw,
+        "Browse the Agricultural Household Survey tables; search source rows and download CSV or the original workbook.",
+        "Reba imbonerahamwe z’Ubushakashatsi ku Bafite Ingo z’Ubuhinzi; shakisha imirongo, ukurure CSV cyangwa workbook y’umwimerere.",
+      ),
+      count: `56 ${tx(rw, "tables", "imbonerahamwe")}`,
+    },
   ];
   const selectDataset = (nextDataset: typeof dataset) => {
     setDataset(nextDataset);
@@ -1010,9 +1090,12 @@ export function DataPage({ language }: Props) {
       setMetric("improved_seed_use");
     } else if (nextDataset === "district") {
       setMetric(DISTRICT_METRICS[0].key);
-    } else {
+    } else if (nextDataset === "workbook") {
       setWorkbookTableId("table-06");
       loadWorkbookTables();
+    } else {
+      setAhsTableId("ahs-2024-table-01");
+      loadAhsTables();
     }
   };
   const resultCountSummary =
@@ -1020,19 +1103,29 @@ export function DataPage({ language }: Props) {
       ? `${filteredNational.length} ${tx(rw, "published rows", "imirongo yatangajwe")} · ${tx(rw, "national estimates", "ibipimo by’igihugu")}${selectedSeason === "ALL" ? ` · ${tx(rw, "all available seasons", "ibihe byose bihari")}` : ` · Season ${selectedSeason}`}`
       : dataset === "district"
         ? `${filteredDistrict.length} ${tx(rw, "district rows", "imirongo y’uturere")}${selectedSeason === "ALL" ? ` · ${tx(rw, "all available periods", "ibihe byose bihari")}` : ` · ${selectedSeason}`}`
-        : workbookLoadStatus === "loading"
-          ? tx(
-              rw,
-              "Loading table rows…",
-              "Imirongo y’imbonerahamwe iri gushakishwa…",
-            )
-          : workbookLoadStatus === "error"
+        : dataset === "ahs"
+          ? ahsLoadStatus === "loading"
+            ? tx(rw, "Loading AHS tables…", "Imbonerahamwe za AHS zirafunguka…")
+            : ahsLoadStatus === "error"
+              ? tx(
+                  rw,
+                  "AHS tables could not be loaded.",
+                  "Imbonerahamwe za AHS ntizafungutse.",
+                )
+              : `${filteredAhsRows.length} of ${selectedAhsTable?.row_count ?? 0} ${tx(rw, "source rows", "imirongo y’isoko")}${selectedAhsTable ? ` · Table ${selectedAhsTable.number} of 56` : ""}`
+          : workbookLoadStatus === "loading"
             ? tx(
                 rw,
-                "Table rows could not be loaded.",
-                "Imirongo y’imbonerahamwe ntiyafungutse.",
+                "Loading table rows…",
+                "Imirongo y’imbonerahamwe iri gushakishwa…",
               )
-            : `${filteredWorkbookRows.length} of ${selectedWorkbookTable?.row_count ?? 0} ${tx(rw, "rows", "imirongo")} · Table ${selectedWorkbookTable?.number ?? "—"} of ${workbookTables.length || 35}`;
+            : workbookLoadStatus === "error"
+              ? tx(
+                  rw,
+                  "Table rows could not be loaded.",
+                  "Imirongo y’imbonerahamwe ntiyafungutse.",
+                )
+              : `${filteredWorkbookRows.length} of ${selectedWorkbookTable?.row_count ?? 0} ${tx(rw, "rows", "imirongo")} · Table ${selectedWorkbookTable?.number ?? "—"} of ${workbookTables.length || 35}`;
   return (
     <div className="page-enter">
       <PageHeading
@@ -1202,11 +1295,11 @@ export function DataPage({ language }: Props) {
             </h2>
           </div>
           <span className="rounded-full border border-border bg-card px-2.5 py-1 text-[10px] font-semibold text-muted-foreground">
-            {tx(rw, "3 collections", "Ibyiciro 3")}
+            {tx(rw, "4 collections", "Ibyiciro 4")}
           </span>
         </div>
         <div
-          className="grid gap-3 md:grid-cols-3"
+          className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
           role="tablist"
           aria-label={tx(rw, "Dataset collections", "Ibyiciro by’amakuru")}
         >
@@ -1283,13 +1376,24 @@ export function DataPage({ language }: Props) {
             label={
               dataset === "workbook"
                 ? tx(rw, "NISR table", "Imbonerahamwe ya NISR")
-                : tx(rw, "Indicator", "Igipimo")
+                : dataset === "ahs"
+                  ? tx(rw, "AHS 2024 table", "Imbonerahamwe ya AHS 2024")
+                  : tx(rw, "Indicator", "Igipimo")
             }
-            value={dataset === "workbook" ? workbookTableId : metric}
+            value={
+              dataset === "workbook"
+                ? workbookTableId
+                : dataset === "ahs"
+                  ? ahsTableId
+                  : metric
+            }
             onChange={(value) => {
               if (dataset === "workbook") {
                 setWorkbookTableId(value);
                 loadWorkbookTables();
+              } else if (dataset === "ahs") {
+                setAhsTableId(value);
+                loadAhsTables();
               } else {
                 setMetric(value);
                 setSeason("ALL");
@@ -1300,24 +1404,39 @@ export function DataPage({ language }: Props) {
                 ? nationalMetricOptions
                 : dataset === "district"
                   ? districtMetricOptions
-                  : workbookTables.length
-                    ? workbookTables.map((table) => ({
-                        value: table.id,
-                        label: `${table.number}. ${compactWorkbookTitle(table.title)}`,
-                      }))
-                    : [
-                        {
-                          value: "table-06",
-                          label:
-                            workbookLoadStatus === "error"
-                              ? "Unable to load tables — select to retry"
-                              : "Loading 35 tables…",
-                        },
-                      ]
+                  : dataset === "ahs"
+                    ? ahsTables.length
+                      ? ahsTables.map((table) => ({
+                          value: table.id,
+                          label: `${table.number}. ${compactWorkbookTitle(table.title)}`,
+                        }))
+                      : [
+                          {
+                            value: "ahs-2024-table-01",
+                            label:
+                              ahsLoadStatus === "error"
+                                ? "Unable to load AHS tables — select to retry"
+                                : "Loading 56 AHS tables…",
+                          },
+                        ]
+                    : workbookTables.length
+                      ? workbookTables.map((table) => ({
+                          value: table.id,
+                          label: `${table.number}. ${compactWorkbookTitle(table.title)}`,
+                        }))
+                      : [
+                          {
+                            value: "table-06",
+                            label:
+                              workbookLoadStatus === "error"
+                                ? "Unable to load tables — select to retry"
+                                : "Loading 35 tables…",
+                          },
+                        ]
             }
             testId="select-data-metric"
           />
-          {dataset !== "workbook" && (
+          {dataset !== "workbook" && dataset !== "ahs" && (
             <NativeSelect
               label={tx(rw, "Time period", "Igihe")}
               value={selectedSeason}
@@ -1344,12 +1463,12 @@ export function DataPage({ language }: Props) {
           <label className="flex min-w-0 flex-col gap-1.5 text-[10px] font-bold uppercase tracking-[.1em] text-muted-foreground">
             {tx(
               rw,
-              dataset === "workbook"
+              dataset === "workbook" || dataset === "ahs"
                 ? "Search table rows"
                 : dataset === "district"
                   ? "Search district or year"
                   : "Search year or season",
-              dataset === "workbook"
+              dataset === "workbook" || dataset === "ahs"
                 ? "Shakisha mu mbonerahamwe"
                 : dataset === "district"
                   ? "Shakisha akarere cyangwa umwaka"
@@ -1366,9 +1485,11 @@ export function DataPage({ language }: Props) {
                 placeholder={
                   dataset === "workbook"
                     ? "e.g. maize or Nyagatare"
-                    : dataset === "district"
-                      ? "e.g. Nyagatare"
-                      : "e.g. 2026 or B"
+                    : dataset === "ahs"
+                      ? "e.g. Kigali, livestock, 2024"
+                      : dataset === "district"
+                        ? "e.g. Nyagatare"
+                        : "e.g. 2026 or B"
                 }
                 className="h-10 w-full rounded-lg border border-border bg-background pl-9 pr-3 text-[12px] font-medium normal-case tracking-normal text-foreground"
                 data-testid="input-data-search"
@@ -1381,7 +1502,9 @@ export function DataPage({ language }: Props) {
                 ? exportNational
                 : dataset === "district"
                   ? exportDistrict
-                  : exportWorkbook
+                  : dataset === "ahs"
+                    ? exportAhsTable
+                    : exportWorkbook
             }
             className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-border bg-background px-3 text-[11px] font-semibold hover:bg-muted"
             data-testid="button-export-csv"
@@ -1389,14 +1512,20 @@ export function DataPage({ language }: Props) {
             <ArrowDownToLine size={14} />
             {tx(rw, "Export CSV", "Kurura CSV")}
           </button>
-          {dataset === "workbook" && (
+          {(dataset === "workbook" || dataset === "ahs") && (
             <a
-              href="/data/nisr-sas-2026-season-a-tables.xlsx"
+              href={
+                dataset === "ahs"
+                  ? "/data/AHS_2024Tables.xlsx"
+                  : "/data/nisr-sas-2026-season-a-tables.xlsx"
+              }
               download
               className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-3 text-[11px] font-semibold text-primary-foreground hover:bg-primary/90"
             >
               <ArrowDownToLine size={14} />
-              Download full workbook
+              {dataset === "ahs"
+                ? tx(rw, "Download AHS workbook", "Kuramo workbook ya AHS")
+                : "Download full workbook"}
             </a>
           )}
         </div>
@@ -1527,7 +1656,7 @@ export function DataPage({ language }: Props) {
               </p>
             )}
           </div>
-        ) : (
+        ) : dataset === "workbook" ? (
           <div className="mt-5 overflow-hidden rounded-lg border border-border">
             <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border bg-[#f4f2e9] px-4 py-3.5">
               <div className="min-w-0">
@@ -1604,6 +1733,115 @@ export function DataPage({ language }: Props) {
                     : workbookLoadStatus === "error"
                       ? "Table data could not be loaded. Select this tab again to retry."
                       : "Loading the NISR tables. This only happens the first time you open this tab."}
+                </p>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div
+            className="mt-5 overflow-hidden rounded-lg border border-border"
+            data-testid="ahs-table-preview"
+          >
+            <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border bg-[#f4f2e9] px-4 py-3.5">
+              <div className="min-w-0">
+                <p className="text-[9px] font-bold uppercase tracking-[.13em] text-primary">
+                  {selectedAhsTable
+                    ? `AHS 2024 · TABLE ${selectedAhsTable.number} · NISR`
+                    : "AHS 2024 TABLES · NISR"}
+                </p>
+                <h2 className="mt-1 text-[13px] font-bold leading-5 text-foreground">
+                  {selectedAhsTable
+                    ? compactWorkbookTitle(selectedAhsTable.title)
+                    : ahsLoadStatus === "error"
+                      ? tx(
+                          rw,
+                          "Could not load the AHS table",
+                          "Imbonerahamwe ya AHS ntiyafungutse",
+                        )
+                      : tx(
+                          rw,
+                          "Loading the 56-table catalogue…",
+                          "Urutonde rw’imbonerahamwe 56 rurafunguka…",
+                        )}
+                </h2>
+                <p className="mt-1 text-[10px] text-muted-foreground">
+                  {filteredAhsRows.length} of {selectedAhsTable?.row_count ?? 0}{" "}
+                  {tx(rw, "source rows", "imirongo y’isoko")} ·{" "}
+                  {tx(
+                    rw,
+                    "original Excel columns and row numbers",
+                    "inkingi n’imirongo by’umwimerere bya Excel",
+                  )}
+                </p>
+              </div>
+              {selectedAhsTable && (
+                <SourceLink
+                  sourceId={selectedAhsTable.source_id}
+                  label={tx(rw, "AHS 2024 workbook", "Workbook ya AHS 2024")}
+                />
+              )}
+            </div>
+            <div
+              className="overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+              role="region"
+              aria-label={tx(
+                rw,
+                "AHS 2024 source worksheet grid",
+                "Imbonerahamwe y’umwimerere ya AHS 2024",
+              )}
+              tabIndex={0}
+            >
+              <table className="w-full min-w-[760px] text-left text-[11px]">
+                <thead className="bg-muted/70 text-[9px] uppercase tracking-[.08em] text-muted-foreground">
+                  <tr>
+                    <th className="sticky left-0 z-[1] min-w-[88px] bg-muted/90 px-3 py-2.5">
+                      {tx(rw, "Excel row", "Umurongo wa Excel")}
+                    </th>
+                    {(selectedAhsTable?.columns ?? []).map((column) => (
+                      <th
+                        key={column}
+                        className="min-w-[120px] whitespace-nowrap px-3 py-2.5"
+                      >
+                        {tx(rw, "Column", "Inkingi")} {column}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredAhsRows.map((row) => (
+                    <tr
+                      key={`${selectedAhsTable?.id}-${row.excel_row}`}
+                      className="border-t border-border"
+                      data-excel-row={row.excel_row}
+                    >
+                      <th className="sticky left-0 z-[1] bg-card px-3 py-2.5 text-left font-mono text-[10px] text-muted-foreground">
+                        {row.excel_row}
+                      </th>
+                      {row.cells.map((value, index) => (
+                        <td
+                          key={`${row.excel_row}-${selectedAhsTable?.columns[index] ?? index}`}
+                          className="min-w-[120px] whitespace-pre-wrap px-3 py-2.5 tabular-nums"
+                        >
+                          {displayAhsCell(value)}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {filteredAhsRows.length === 0 && (
+                <p className="p-5 text-center text-[12px] text-muted-foreground">
+                  {ahsLoadStatus === "error"
+                    ? tx(
+                        rw,
+                        "AHS tables could not be loaded. Select this collection again to retry.",
+                        "Imbonerahamwe za AHS ntizafungutse. Ongera uhitemo iki cyiciro ugerageze.",
+                      )
+                    : tx(
+                        rw,
+                        "No source rows match this search. Try another term or clear the search.",
+                        "Nta mirongo y’isoko ihuye n’iri shakisha. Gerageza irindi jambo cyangwa ukuremo iri shakisha.",
+                      )}
                 </p>
               )}
             </div>

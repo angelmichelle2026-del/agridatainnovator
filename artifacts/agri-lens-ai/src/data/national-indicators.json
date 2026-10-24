@@ -40,6 +40,15 @@
         "All 35 supplied workbook tables, including district land use, crop area, production, yield, inputs and agricultural practices"
       ],
       "note": "The workbook supplied for this task attributes its worksheets to NISR SAS 2026. The linked NISR page is the Season A release landing page; workbook values are preserved in the app table browser and downloadable file."
+    },
+    {
+      "id": "nisr-ahs-2024-workbook",
+      "publisher": "National Institute of Statistics of Rwanda (NISR)",
+      "title": "Agricultural Household Survey (AHS) 2024 — Main Tables",
+      "period": "Agricultural Household Survey 2024; some livestock tables cover the 2023/24 agricultural year",
+      "source_url": "/data/AHS_2024Tables.xlsx",
+      "tables": ["All 56 numbered tables from the supplied AHS 2024 workbook"],
+      "note": "Recommended citation printed in the workbook: National Institute of Statistics of Rwanda (NISR), Agricultural Household Survey 2024 report, August 2025. Original workbook is available for download; table-specific periods and units are retained."
     }
   ],
   "metric_definitions": {

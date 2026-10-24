@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { MapPinned, MousePointer2 } from "lucide-react";
 import type { Language } from "@/components/app-shell";
 
@@ -15,7 +15,17 @@ type DistrictFeatureCollection = {
   type: "FeatureCollection";
   features: DistrictFeature[];
 };
-type DistrictObservation = { district: string; value: number | null };
+type DistrictStatistic = {
+  key: string;
+  label: string;
+  unit: string;
+  value: number | null;
+};
+type DistrictObservation = {
+  district: string;
+  value: number | null;
+  statistics: DistrictStatistic[];
+};
 type DistrictMetric = { key: string; label: string; unit: string };
 type DistrictLandUseMapProps = {
   language: Language;
@@ -151,6 +161,8 @@ export function DistrictLandUseMap({
   const [isLoading, setIsLoading] = useState(true);
   const [selectedDistrict, setSelectedDistrict] = useState("");
   const [hoveredDistrict, setHoveredDistrict] = useState("");
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 12, y: 12 });
+  const mapViewportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -186,6 +198,16 @@ export function DistrictLandUseMap({
         observations.map((row) => [
           normalizeDistrictName(row.district),
           row.value,
+        ]),
+      ),
+    [observations],
+  );
+  const statisticsByDistrict = useMemo(
+    () =>
+      new Map(
+        observations.map((row) => [
+          normalizeDistrictName(row.district),
+          row.statistics,
         ]),
       ),
     [observations],
@@ -281,6 +303,9 @@ export function DistrictLandUseMap({
   const inspectedValue = inspectedDistrict
     ? valuesByDistrict.get(normalizeDistrictName(inspectedDistrict))
     : undefined;
+  const hoveredStatistics = hoveredDistrict
+    ? (statisticsByDistrict.get(normalizeDistrictName(hoveredDistrict)) ?? [])
+    : [];
   const sortedDistrictNames = features
     .map((feature) => feature.properties.shapeName)
     .sort((left, right) => left.localeCompare(right));
@@ -295,6 +320,23 @@ export function DistrictLandUseMap({
       Math.floor(ratio * COLOR_STEPS.length),
     );
     return COLOR_STEPS[Math.max(0, step)];
+  }
+
+  function positionTooltip(clientX: number, clientY: number) {
+    const bounds = mapViewportRef.current?.getBoundingClientRect();
+    if (!bounds) return;
+    const tooltipWidth = Math.min(264, bounds.width - 16);
+    const tooltipHeight = Math.min(240, bounds.height - 16);
+    setTooltipPosition({
+      x: Math.max(
+        8,
+        Math.min(clientX - bounds.left + 14, bounds.width - tooltipWidth - 8),
+      ),
+      y: Math.max(
+        8,
+        Math.min(clientY - bounds.top + 14, bounds.height - tooltipHeight - 8),
+      ),
+    });
   }
 
   if (loadError || (features.length > 0 && !hasReliableMatch)) {
@@ -365,7 +407,10 @@ export function DistrictLandUseMap({
         </p>
       ) : (
         <div className="grid gap-4 p-3 sm:p-5 lg:grid-cols-[minmax(0,1fr)_250px]">
-          <div className="min-w-0 rounded-xl bg-[#f4f7f3] p-2 sm:p-3">
+          <div
+            ref={mapViewportRef}
+            className="relative min-w-0 rounded-xl bg-[#f4f7f3] p-2 sm:p-3"
+          >
             <svg
               className="h-[320px] w-full sm:h-[430px]"
               viewBox={`0 0 ${MAP_WIDTH} ${MAP_HEIGHT}`}
@@ -411,9 +456,28 @@ export function DistrictLandUseMap({
                     aria-label={`${name}, ${metricName(metric, rw)}: ${accessibleValue}`}
                     data-district={name}
                     data-testid={`map-district-${normalizedName}`}
-                    onPointerEnter={() => setHoveredDistrict(name)}
+                    aria-describedby={
+                      hoveredDistrict === name
+                        ? "district-map-tooltip"
+                        : undefined
+                    }
+                    onPointerEnter={(event) => {
+                      setHoveredDistrict(name);
+                      positionTooltip(event.clientX, event.clientY);
+                    }}
+                    onPointerMove={(event) =>
+                      positionTooltip(event.clientX, event.clientY)
+                    }
                     onPointerLeave={() => setHoveredDistrict("")}
-                    onFocus={() => setHoveredDistrict(name)}
+                    onFocus={(event) => {
+                      setHoveredDistrict(name);
+                      const bounds =
+                        event.currentTarget.getBoundingClientRect();
+                      positionTooltip(
+                        bounds.left + bounds.width / 2,
+                        bounds.top + bounds.height / 2,
+                      );
+                    }}
                     onBlur={() => setHoveredDistrict("")}
                     onClick={() => setSelectedDistrict(name)}
                     onKeyDown={(event) => {
@@ -422,12 +486,56 @@ export function DistrictLandUseMap({
                         setSelectedDistrict(name);
                       }
                     }}
-                  >
-                    <title>{`${name} · ${metricName(metric, rw)} · ${accessibleValue}`}</title>
-                  </path>
+                  />
                 );
               })}
             </svg>
+            {hoveredDistrict && (
+              <div
+                id="district-map-tooltip"
+                role="tooltip"
+                className="pointer-events-none absolute z-10 w-[min(264px,calc(100%-1rem))] rounded-xl border border-[#cdd9ce] bg-white/95 p-3 shadow-lg backdrop-blur-sm"
+                style={{ left: tooltipPosition.x, top: tooltipPosition.y }}
+                data-testid="district-map-tooltip"
+              >
+                <div className="mb-2 flex items-start justify-between gap-2 border-b border-border/70 pb-2">
+                  <span className="text-[12px] font-bold text-foreground">
+                    {hoveredDistrict}
+                  </span>
+                  <span className="shrink-0 text-[9px] font-medium text-muted-foreground">
+                    {period.replace(" · ", " · Season ")}
+                  </span>
+                </div>
+                <dl className="grid grid-cols-2 gap-x-3 gap-y-2">
+                  {hoveredStatistics.map((statistic) => (
+                    <div
+                      key={statistic.key}
+                      className={
+                        statistic.key === metric.key
+                          ? "col-span-2 rounded-lg bg-[#edf4ee] px-2 py-1.5"
+                          : "min-w-0"
+                      }
+                    >
+                      <dt className="text-[9px] leading-3 text-muted-foreground">
+                        {metricName(
+                          {
+                            key: statistic.key,
+                            label: statistic.label,
+                            unit: statistic.unit,
+                          },
+                          rw,
+                        )}
+                      </dt>
+                      <dd className="mt-0.5 break-words text-[10px] font-semibold tabular-nums text-foreground">
+                        {typeof statistic.value === "number"
+                          ? formatValue(statistic.value, statistic.unit, rw)
+                          : t(rw, "No data reported", "Nta makuru yatangajwe")}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+            )}
           </div>
 
           <aside className="flex min-w-0 flex-col gap-4">

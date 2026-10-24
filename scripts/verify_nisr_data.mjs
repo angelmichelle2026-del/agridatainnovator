@@ -99,7 +99,12 @@ assert.equal(
   146.7,
 );
 assert.equal(national.observations.length, 53);
-assert.equal(national.sources.length, 4);
+assert.equal(national.sources.length, 5);
+assert.equal(
+  national.sources.find((source) => source.id === "nisr-ahs-2024-workbook")
+    ?.source_url,
+  "/data/AHS_2024Tables.xlsx",
+);
 assert.equal(land2026a.observations.length, 31);
 assert.equal(
   new Set(land2026a.observations.map((row) => row.district)).size,

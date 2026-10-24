@@ -23,6 +23,9 @@ const workbook = JSON.parse(
     "utf8",
   ),
 );
+const ahsWorkbook = JSON.parse(
+  readFileSync(resolve(dataDirectory, "ahs-2024-tables.json"), "utf8"),
+);
 const provinceYield = JSON.parse(
   readFileSync(resolve(dataDirectory, "province-yields-2026a.json"), "utf8"),
 );
@@ -108,6 +111,67 @@ test("catalog search supports a Kinyarwanda province name and emits 2026A eviden
         hit.location === "Eastern Province" && hit.period === "2026 Season A",
     ),
   );
+});
+
+test("AHS 2024 catalog search and exact table retrieval retain source rows and citations", () => {
+  assert.equal(ahsWorkbook.tables.length, 56);
+  const search = searchAgriData("soil erosion", 10);
+  assert.ok(
+    search.results.some(
+      (hit) => hit.id.startsWith("ahs-") && /Table 38/.test(hit.title),
+    ),
+  );
+  assert.ok(
+    search.results.some(
+      (hit) =>
+        hit.sourceId === "nisr-ahs-2024-workbook" &&
+        hit.sourceUrl === "/data/AHS_2024Tables.xlsx",
+    ),
+  );
+
+  const result = executeAgriTool("query_nisr_snapshot", {
+    dataset: "ahs_table",
+    table_number: 38,
+    row_query: "soil erosion",
+    limit: 10,
+  });
+  assert.equal(result.available, true);
+  assert.equal(result.table_number, 38);
+  assert.match(result.title, /soil degradation threats/i);
+  assert.equal(result.sourceId, "nisr-ahs-2024-workbook");
+  assert.match(
+    result.citation,
+    /Agricultural Household Survey 2024 report, August 2025/i,
+  );
+  assert.ok(
+    result.rows.some((row) =>
+      row.cells.some((value) => String(value ?? "").includes("Soil erosion")),
+    ),
+  );
+  assert.equal(result.rows[0].excel_row, 4);
+
+  const catalog = executeAgriTool("get_agri_data_catalog", {});
+  assert.equal(
+    catalog.datasets.find((item) => item.id === "ahs_table")?.tables,
+    56,
+  );
+});
+
+test("AHS 2024 Table 1 returns the workbook's own 2024 estimate unchanged", () => {
+  const result = executeAgriTool("query_nisr_snapshot", {
+    dataset: "ahs_table",
+    table_number: 1,
+    row_query: "Estimated number of agricultural households in millions",
+  });
+  assert.equal(result.available, true);
+  const row = result.rows.find((candidate) =>
+    candidate.cells.includes(
+      "Estimated number of agricultural households in millions",
+    ),
+  );
+  assert.ok(row);
+  assert.equal(row.excel_row, 5);
+  assert.deepEqual(row.cells.slice(-3), [2.1, 2.3, 2.164]);
 });
 
 test("district maize production ranking matches Table 15 and excludes summary rows", () => {

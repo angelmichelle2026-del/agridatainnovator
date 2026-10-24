@@ -76,6 +76,23 @@ type ProvinceYieldFile = {
   }>;
 };
 type WorkbookFile = { source: Source; tables: WorkbookTable[] };
+type AhsWorkbookRow = {
+  excel_row: number;
+  cells: Array<string | number | null>;
+};
+type AhsWorkbookFile = {
+  source: Source & { citation?: string; provenance_note?: string };
+  tables: Array<{
+    id: string;
+    number: number;
+    sheet_name: string;
+    title: string;
+    columns: string[];
+    row_count: number;
+    rows: AhsWorkbookRow[];
+    source_id: string;
+  }>;
+};
 type AdminFile = {
   entities: Array<{ name: string; rw_name: string; districts: string[] }>;
 };
@@ -102,6 +119,7 @@ const land2025 = loadJson<LandFile>("district-land-2025.json");
 const land2026a = loadJson<LandFile>("district-land-2026a.json");
 const provinceYield = loadJson<ProvinceYieldFile>("province-yields-2026a.json");
 const workbook = loadJson<WorkbookFile>("nisr-sas-2026-season-a-tables.json");
+const ahsWorkbook = loadJson<AhsWorkbookFile>("ahs-2024-tables.json");
 const admin = loadJson<AdminFile>("rwanda-admin-areas.json");
 
 const sourceMap = new Map<string, Source>();
@@ -111,6 +129,7 @@ for (const source of [
   land2026a.source,
   provinceYield.source,
   workbook.source,
+  ahsWorkbook.source,
 ]) {
   if (source?.id) sourceMap.set(source.id, source);
 }
@@ -427,6 +446,37 @@ function buildSearchDocuments(): SearchDocument[] {
       });
     }
   }
+  for (const table of ahsWorkbook.tables) {
+    const tableTerms = `${table.title} ${table.sheet_name} AHS 2024 Agricultural Household Survey Rwanda NISR ${table.columns.join(" ")}`;
+    docs.push({
+      id: `ahs-table:${table.number}`,
+      kind: "ahs_table",
+      title: table.title,
+      body: `${tableTerms}. ${ahsWorkbook.source.citation ?? ""}`,
+      period: "AHS 2024",
+      sourceId: ahsWorkbook.source.id,
+    });
+    for (const row of table.rows) {
+      const values = table.columns
+        .map((column, index) => {
+          const value = row.cells[index];
+          return value === null || value === undefined || value === ""
+            ? ""
+            : `Column ${column}: ${String(value)}`;
+        })
+        .filter(Boolean)
+        .join("; ");
+      if (!values) continue;
+      docs.push({
+        id: `ahs-row:${table.number}:${row.excel_row}`,
+        kind: "ahs_row",
+        title: `${table.title} — worksheet row ${row.excel_row}`,
+        body: `${tableTerms}. Worksheet row ${row.excel_row}: ${values}`,
+        period: "AHS 2024",
+        sourceId: ahsWorkbook.source.id,
+      });
+    }
+  }
   return docs;
 }
 
@@ -563,7 +613,9 @@ export function searchAgriData(
   const tableResultCounts = new Map<number, number>();
   const selectedHits: SearchHit[] = [];
   for (const { hit } of ranked) {
-    const row = /^workbook-(?:row|value):(\d+):/.exec(hit.id);
+    const row =
+      /^workbook-(?:row|value):(\d+):/.exec(hit.id) ??
+      /^ahs-row:(\d+):/.exec(hit.id);
     if (row) {
       const tableNumber = Number(row[1]);
       const count = tableResultCounts.get(tableNumber) ?? 0;
@@ -731,9 +783,9 @@ function getSnapshotData(args: Record<string, unknown>) {
     typeof args.season === "string" ? args.season.toUpperCase() : undefined;
   if (season && !["A", "B", "C"].includes(season))
     return unavailable("Season must be A, B, or C.");
-  if (year && ![2025, 2026].includes(year))
+  if (year && ![2024, 2025, 2026].includes(year))
     return unavailable(
-      "The snapshot has records for 2025 and 2026 only.",
+      "The available datasets include 2024 AHS and 2025–2026 SAS records.",
       "Search the catalog for the available reporting periods.",
     );
 
@@ -914,13 +966,62 @@ function getSnapshotData(args: Record<string, unknown>) {
     };
   }
 
+  if (dataset === "ahs_table") {
+    const tableNumber =
+      typeof args.table_number === "number" ? Math.trunc(args.table_number) : 0;
+    const table = ahsWorkbook.tables.find(
+      (item) => item.number === tableNumber,
+    );
+    if (!table)
+      return unavailable(
+        "AHS table number must be one of the 56 imported 2024 tables.",
+        "Use the catalog to choose a table number from 1 to 56.",
+        {
+          available_tables: ahsWorkbook.tables.map(({ number, title }) => ({
+            number,
+            title,
+          })),
+        },
+      );
+    const rowQuery =
+      typeof args.row_query === "string" ? normalizeText(args.row_query) : "";
+    const matchingRows = rowQuery
+      ? table.rows.filter((row) =>
+          normalizeText(
+            row.cells.map((value) => String(value ?? "")).join(" "),
+          ).includes(rowQuery),
+        )
+      : table.rows;
+    if (matchingRows.length === 0)
+      return unavailable(
+        `AHS Table ${tableNumber} exists, but no source rows match the requested row filter.`,
+        "Check the row label or search for a topic or province in the table.",
+      );
+    return {
+      available: true,
+      dataset,
+      table_number: table.number,
+      title: table.title,
+      worksheet: table.sheet_name,
+      column_letters: table.columns,
+      rows: matchingRows.slice(0, limit).map((row) => ({
+        excel_row: row.excel_row,
+        cells: row.cells,
+      })),
+      total_matches: matchingRows.length,
+      truncated: matchingRows.length > limit,
+      citation: ahsWorkbook.source.citation,
+      ...sourcePayload(ahsWorkbook.source.id),
+    };
+  }
+
   if (dataset === "workbook_table") {
     const tableNumber =
       typeof args.table_number === "number" ? Math.trunc(args.table_number) : 0;
     const table = getTable(tableNumber);
     if (!table)
       return unavailable(
-        "Workbook table number must be one of the 35 imported tables.",
+        "Workbook table number must be one of the 35 imported SAS tables.",
         "Search the data catalog to find the relevant table.",
         {
           available_tables: workbook.tables.map(({ number, title }) => ({
@@ -958,7 +1059,7 @@ function getSnapshotData(args: Record<string, unknown>) {
 
   return unavailable(
     "Dataset is not on the read-only allowlist.",
-    "Use one of: national_indicators, district_land, province_yields, workbook_table.",
+    "Use one of: national_indicators, district_land, province_yields, workbook_table, ahs_table.",
   );
 }
 
@@ -1365,6 +1466,12 @@ function getCatalog(query?: string) {
         periods: "NISR SAS 2026 Season A workbook",
         tables: tables.length,
       },
+      {
+        id: "ahs_table",
+        periods:
+          "Agricultural Household Survey 2024; table-specific periods retained",
+        tables: ahsWorkbook.tables.length,
+      },
     ],
     indicators: metrics,
     sources: CHAT_SOURCES.map(({ id, title, source_url, period, note }) => ({
@@ -1375,6 +1482,10 @@ function getCatalog(query?: string) {
       note,
     })),
     tables,
+    ahs_tables: ahsWorkbook.tables.map(({ number, title }) => ({
+      number,
+      title,
+    })),
     limitations: [
       "District crop production and yield are available from selected 2026 Season A workbook tables; not every indicator is available at district level.",
       "Province yield records are derived area-weighted summaries for 2026 Season A, not separate NISR-published province estimates.",
@@ -1394,7 +1505,7 @@ export const AGRI_TOOL_DEFINITIONS = [
     function: {
       name: "search_agri_data",
       description:
-        "Search the read-only AgriLens catalog across indicator definitions, NISR observations, district land records, derived province yields, and all 35 workbook tables. Use before answering when the matching dataset or measure is unclear.",
+        "Search the read-only AgriLens catalog across SAS indicators and land records, derived province yields, all 35 SAS 2026 workbook tables, and all 56 Agricultural Household Survey (AHS) 2024 tables. Use before answering when the matching dataset or measure is unclear.",
       parameters: {
         type: "object",
         properties: {
@@ -1422,7 +1533,7 @@ export const AGRI_TOOL_DEFINITIONS = [
     function: {
       name: "get_agri_data_catalog",
       description:
-        "List the actual dataset coverage, indicator definitions, sources, workbook tables, and known limitations. Use to explain what the snapshot does and does not contain.",
+        "List the actual dataset coverage, indicator definitions, sources, SAS and AHS workbook tables, and known limitations. Use to explain what the data collections do and do not contain.",
       parameters: {
         type: "object",
         properties: {
@@ -1441,7 +1552,7 @@ export const AGRI_TOOL_DEFINITIONS = [
     function: {
       name: "query_nisr_snapshot",
       description:
-        "Retrieve exact records from an allowlisted read-only dataset with exact period, location and measure filters. Do not use this as free-form SQL.",
+        "Retrieve exact records from an allowlisted read-only dataset. For AHS 2024, select dataset ahs_table and a table_number; source worksheet row numbers and cell values are returned without derived estimates.",
       parameters: {
         type: "object",
         properties: {
@@ -1452,6 +1563,7 @@ export const AGRI_TOOL_DEFINITIONS = [
               "district_land",
               "province_yields",
               "workbook_table",
+              "ahs_table",
             ],
           },
           metric: {
@@ -1468,9 +1580,9 @@ export const AGRI_TOOL_DEFINITIONS = [
             type: "string",
             description: "Exact province or City of Kigali name.",
           },
-          year: { type: "integer", enum: [2025, 2026] },
+          year: { type: "integer", enum: [2024, 2025, 2026] },
           season: { type: "string", enum: ["A", "B", "C"] },
-          table_number: { type: "integer", minimum: 1, maximum: 35 },
+          table_number: { type: "integer", minimum: 1, maximum: 56 },
           row_query: {
             type: "string",
             description: "Optional exact phrase to filter workbook rows.",
